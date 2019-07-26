@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 Tyler Blair. All rights reserved.
+ * Copyright 2011-2013 Tyler Blair. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are
  * permitted provided that the following conditions are met:
@@ -27,6 +27,15 @@
  */
 package ru.beykerykt.lightapi.utils;
 
+import org.bukkit.Bukkit;
+import org.bukkit.Server;
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.PluginDescriptionFile;
+import org.bukkit.scheduler.BukkitTask;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -49,16 +58,7 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.zip.GZIPOutputStream;
 
-import org.bukkit.Bukkit;
-import org.bukkit.Server;
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.PluginDescriptionFile;
-import org.bukkit.scheduler.BukkitTask;
-
-public class Metrics {
+public class Metrics_mcstats {
 
 	/**
 	 * The current revision number
@@ -111,6 +111,11 @@ public class Metrics {
 	private final boolean debug;
 
 	/**
+	 * The plugin name.
+ 	 */
+	private final String pluginName;
+
+	/**
 	 * Lock for synchronization
 	 */
 	private final Object optOutLock = new Object();
@@ -120,12 +125,19 @@ public class Metrics {
 	 */
 	private volatile BukkitTask task = null;
 
-	public Metrics(final Plugin plugin) throws IOException {
+	public Metrics_mcstats(final Plugin plugin) throws IOException {
+		this(plugin, null);
+	}
+
+	public Metrics_mcstats(final Plugin plugin, String pluginName) throws IOException {
 		if (plugin == null) {
 			throw new IllegalArgumentException("Plugin cannot be null");
 		}
 
 		this.plugin = plugin;
+		this.pluginName = pluginName != null && pluginName.trim().isEmpty()
+				? plugin.getName()
+				: pluginName;
 
 		// load the config
 		configurationFile = getConfigFile();
@@ -148,10 +160,10 @@ public class Metrics {
 	}
 
 	/**
-	 * Construct and create a Graph that can be used to separate specific plotters to their own graphs on the metrics website. Plotters can be added to the graph object returned.
+	 * Construct and create a Graph that can be used to separate specific plotters to their own graphs on the metrics
+	 * website. Plotters can be added to the graph object returned.
 	 *
-	 * @param name
-	 *            The name of the graph
+	 * @param name The name of the graph
 	 * @return Graph object created. Will never return NULL under normal circumstances unless bad parameters are given
 	 */
 	public Graph createGraph(final String name) {
@@ -172,8 +184,7 @@ public class Metrics {
 	/**
 	 * Add a Graph object to BukkitMetrics that represents data for the plugin that should be sent to the backend
 	 *
-	 * @param graph
-	 *            The name of the graph
+	 * @param graph The name of the graph
 	 */
 	public void addGraph(final Graph graph) {
 		if (graph == null) {
@@ -184,7 +195,9 @@ public class Metrics {
 	}
 
 	/**
-	 * Start measuring statistics. This will immediately create an async repeating task as the plugin and send the initial data to the metrics backend, and then after that it will post in increments of PING_INTERVAL * 1200 ticks.
+	 * Start measuring statistics. This will immediately create an async repeating task as the plugin and send the
+	 * initial data to the metrics backend, and then after that it will post in increments of PING_INTERVAL * 1200
+	 * ticks.
 	 *
 	 * @return True if statistics measuring is running, otherwise false.
 	 */
@@ -205,30 +218,24 @@ public class Metrics {
 
 				private boolean firstPost = true;
 
-				@Override
 				public void run() {
 					try {
-						// This has to be synchronized or it can collide with
-						// the disable method.
+						// This has to be synchronized or it can collide with the disable method.
 						synchronized (optOutLock) {
-							// Disable Task, if it is running and the server
-							// owner decided to opt-out
+							// Disable Task, if it is running and the server owner decided to opt-out
 							if (isOptOut() && task != null) {
 								task.cancel();
 								task = null;
-								// Tell all plotters to stop gathering
-								// information.
+								// Tell all plotters to stop gathering information.
 								for (Graph graph : graphs) {
 									graph.onOptOut();
 								}
 							}
 						}
 
-						// We use the inverse of firstPost because if it is the
-						// first time we are posting,
+						// We use the inverse of firstPost because if it is the first time we are posting,
 						// it is not a interval ping, so it evaluates to FALSE
-						// Each time thereafter it will evaluate to TRUE, i.e
-						// PING!
+						// Each time thereafter it will evaluate to TRUE, i.e PING!
 						postPlugin(!firstPost);
 
 						// After the first post we set firstPost to false
@@ -277,11 +284,9 @@ public class Metrics {
 	 * @throws java.io.IOException
 	 */
 	public void enable() throws IOException {
-		// This has to be synchronized or it can collide with the check in the
-		// task.
+		// This has to be synchronized or it can collide with the check in the task.
 		synchronized (optOutLock) {
-			// Check if the server owner has already set opt-out, if not, set
-			// it.
+			// Check if the server owner has already set opt-out, if not, set it.
 			if (isOptOut()) {
 				configuration.set("opt-out", false);
 				configuration.save(configurationFile);
@@ -300,11 +305,9 @@ public class Metrics {
 	 * @throws java.io.IOException
 	 */
 	public void disable() throws IOException {
-		// This has to be synchronized or it can collide with the check in the
-		// task.
+		// This has to be synchronized or it can collide with the check in the task.
 		synchronized (optOutLock) {
-			// Check if the server owner has already set opt-out, if not, set
-			// it.
+			// Check if the server owner has already set opt-out, if not, set it.
 			if (!isOptOut()) {
 				configuration.set("opt-out", true);
 				configuration.save(configurationFile);
@@ -324,8 +327,7 @@ public class Metrics {
 	 * @return the File object for the config file
 	 */
 	public File getConfigFile() {
-		// I believe the easiest way to get the base folder (e.g craftbukkit set
-		// via -P) for plugins to use
+		// I believe the easiest way to get the base folder (e.g craftbukkit set via -P) for plugins to use
 		// is to abuse the plugin object we already have
 		// plugin.getDataFolder() => base/plugins/PluginA/
 		// pluginsFolder => base/plugins/
@@ -338,7 +340,7 @@ public class Metrics {
 
 	/**
 	 * Gets the online player (backwards compatibility)
-	 * 
+	 *
 	 * @return online player amount
 	 */
 	private int getOnlinePlayers() {
@@ -364,23 +366,18 @@ public class Metrics {
 	private void postPlugin(final boolean isPing) throws IOException {
 		// Server software specific section
 		PluginDescriptionFile description = plugin.getDescription();
-		String pluginName = description.getName();
-		boolean onlineMode = Bukkit.getServer().getOnlineMode(); // TRUE if
-																	// online mode
-																	// is enabled
+		boolean onlineMode = Bukkit.getServer().getOnlineMode(); // TRUE if online mode is enabled
 		String pluginVersion = description.getVersion();
 		String serverVersion = Bukkit.getVersion();
 		int playersOnline = this.getOnlinePlayers();
 
-		// END server software specific section -- all code below does not use
-		// any code outside of this class / Java
+		// END server software specific section -- all code below does not use any code outside of this class / Java
 
 		// Construct the post data
 		StringBuilder json = new StringBuilder(1024);
 		json.append('{');
 
-		// The plugin's description file containg all of the plugin data such as
-		// name, version, author, etc
+		// The plugin's description file containg all of the plugin data such as name, version, author, etc
 		appendJSONPair(json, "guid", guid);
 		appendJSONPair(json, "plugin_version", pluginVersion);
 		appendJSONPair(json, "server_version", serverVersion);
@@ -467,6 +464,7 @@ public class Metrics {
 			connection = url.openConnection();
 		}
 
+
 		byte[] uncompressed = json.toString().getBytes();
 		byte[] compressed = gzip(json.toString());
 
@@ -539,11 +537,10 @@ public class Metrics {
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
-			if (gzos != null)
-				try {
-					gzos.close();
-				} catch (IOException ignore) {
-				}
+			if (gzos != null) try {
+				gzos.close();
+			} catch (IOException ignore) {
+			}
 		}
 
 		return baos.toByteArray();
@@ -646,8 +643,7 @@ public class Metrics {
 	/**
 	 * Encode text as UTF-8
 	 *
-	 * @param text
-	 *            the text to encode
+	 * @param text the text to encode
 	 * @return the encoded text, as UTF-8
 	 */
 	private static String urlEncode(final String text) throws UnsupportedEncodingException {
@@ -660,7 +656,8 @@ public class Metrics {
 	public static class Graph {
 
 		/**
-		 * The graph's name, alphanumeric and spaces only :) If it does not comply to the above when submitted, it is rejected
+		 * The graph's name, alphanumeric and spaces only :) If it does not comply to the above when submitted, it is
+		 * rejected
 		 */
 		private final String name;
 
@@ -685,8 +682,7 @@ public class Metrics {
 		/**
 		 * Add a plotter to the graph, which will be used to plot entries
 		 *
-		 * @param plotter
-		 *            the plotter to add to the graph
+		 * @param plotter the plotter to add to the graph
 		 */
 		public void addPlotter(final Plotter plotter) {
 			plotters.add(plotter);
@@ -695,8 +691,7 @@ public class Metrics {
 		/**
 		 * Remove a plotter from the graph
 		 *
-		 * @param plotter
-		 *            the plotter to remove from the graph
+		 * @param plotter the plotter to remove from the graph
 		 */
 		public void removePlotter(final Plotter plotter) {
 			plotters.remove(plotter);
@@ -753,15 +748,16 @@ public class Metrics {
 		/**
 		 * Construct a plotter with a specific plot name
 		 *
-		 * @param name
-		 *            the name of the plotter to use, which will show up on the website
+		 * @param name the name of the plotter to use, which will show up on the website
 		 */
 		public Plotter(final String name) {
 			this.name = name;
 		}
 
 		/**
-		 * Get the current value for the plotted point. Since this function defers to an external function it may or may not return immediately thus cannot be guaranteed to be thread friendly or safe. This function can be called from any thread so care should be taken when accessing resources that need to be synchronized.
+		 * Get the current value for the plotted point. Since this function defers to an external function it may or may
+		 * not return immediately thus cannot be guaranteed to be thread friendly or safe. This function can be called
+		 * from any thread so care should be taken when accessing resources that need to be synchronized.
 		 *
 		 * @return the current value for the point to be plotted.
 		 */

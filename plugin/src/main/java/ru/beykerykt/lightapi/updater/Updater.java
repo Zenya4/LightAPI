@@ -1,4 +1,31 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2016 Vladimir Mikhailov <beykerykt@gmail.com>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 package ru.beykerykt.lightapi.updater;
+
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -7,10 +34,6 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
-
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.JSONValue;
 
 /**
  * Class that tries to find updates on a GitHub repository.
@@ -28,12 +51,14 @@ public class Updater {
 	 * <p/>
 	 * Does detect suffixes such as RC though they're unused as of now.
 	 */
-	protected static Pattern regex = Pattern.compile("(?:[v]?)([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?(?:\\+[0-9A-Za-z-]+)?", Pattern.CASE_INSENSITIVE);
+	static Pattern regex = Pattern.compile(
+			"(?:[v]?)([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?(?:\\+[0-9A-Za-z-]+)?",
+			Pattern.CASE_INSENSITIVE);
 
 	/**
 	 * URL template for all API calls
 	 */
-	protected static String api = "https://api.github.com/repos/{{ REPOSITORY }}/releases";
+	private static final String api = "https://api.github.com/repos/{{ REPOSITORY }}/releases";
 
 	/**
 	 * Store the query result.
@@ -42,20 +67,20 @@ public class Updater {
 
 	/**
 	 * User agent to use when making requests, according to the API it's preferred if this is your username.
-	 *
+	 * <p>
 	 * See https://developer.github.com/v3/#user-agent-required
 	 */
-	private String agent = "Albioncode";
+	private final String agent = "Albioncode";
 
 	/**
 	 * Store the repository to lookup.
 	 */
-	private String repository = null;
+	private final String repository;
 
 	/**
 	 * Should I print to System.out?
 	 */
-	private boolean verbose = false;
+	private final boolean verbose;
 
 	/**
 	 * Store the <strong>latest</strong> version.
@@ -83,14 +108,10 @@ public class Updater {
 	/**
 	 * Create a new {@link Updater} using integers as the major, minor and patch.
 	 *
-	 * @param major
-	 *            current major
-	 * @param minor
-	 *            current minor
-	 * @param patch
-	 *            current patch
-	 * @param repository
-	 *            github repository to query
+	 * @param major      current major
+	 * @param minor      current minor
+	 * @param patch      current patch
+	 * @param repository github repository to query
 	 */
 	public Updater(int major, int minor, int patch, String repository) throws Exception {
 		this(Version.parse(major + "." + minor + "." + patch), repository, false);
@@ -99,14 +120,10 @@ public class Updater {
 	/**
 	 * Create a new {@link Updater} using integers as the major, minor and patch.
 	 *
-	 * @param major
-	 *            current major
-	 * @param minor
-	 *            current minor
-	 * @param patch
-	 *            current patch
-	 * @param repository
-	 *            github repository to query
+	 * @param major      current major
+	 * @param minor      current minor
+	 * @param patch      current patch
+	 * @param repository github repository to query
 	 */
 	public Updater(int major, int minor, int patch, String repository, boolean verbose) throws Exception {
 		this(Version.parse(major + "." + minor + "." + patch), repository, verbose);
@@ -115,12 +132,9 @@ public class Updater {
 	/**
 	 * Create a new {@link Updater} using a {@link java.lang.String}
 	 *
-	 * @param version
-	 *            string containing valid semver string
-	 * @param repository
-	 *            github repository to query
-	 * @throws Exception
-	 *             error whilst parsing semver string
+	 * @param version    string containing valid semver string
+	 * @param repository github repository to query
+	 * @throws Exception error whilst parsing semver string
 	 */
 	public Updater(String version, String repository) throws Exception {
 		this(Version.parse(version), repository, false);
@@ -129,24 +143,19 @@ public class Updater {
 	/**
 	 * Create a new {@link Updater} using a {@link java.lang.String}
 	 *
-	 * @param version
-	 *            string containing valid semver string
-	 * @param repository
-	 *            github repository to query
-	 * @param verbose
-	 *            print information to System.out
-	 * @throws Exception
-	 *             error whilst parsing semver string
+	 * @param version    string containing valid semver string
+	 * @param repository github repository to query
+	 * @param verbose    print information to System.out
+	 * @throws Exception error whilst parsing semver string
 	 */
 	public Updater(String version, String repository, boolean verbose) throws Exception {
 		this(Version.parse(version), repository, verbose);
 	}
 
 	/**
-	 * Create a new {@link Updater} using a {@link de.albionco.updater.Version} object.
+	 * Create a new {@link Updater} using a {@link ru.beykerykt.lightapi.updater.Version} object.
 	 *
-	 * @param repository
-	 *            github repository to query
+	 * @param repository github repository to query
 	 */
 	public Updater(Version version, String repository) throws Exception {
 		this(version, repository, false);
@@ -155,14 +164,10 @@ public class Updater {
 	/**
 	 * Create a new {@link Updater} using a {@link java.lang.String}
 	 *
-	 * @param version
-	 *            string containing valid semver string
-	 * @param repository
-	 *            github repository to query
-	 * @param verbose
-	 *            print information to console
-	 * @throws Exception
-	 *             error whilst parsing semver string
+	 * @param version    string containing valid semver string
+	 * @param repository github repository to query
+	 * @param verbose    print information to console
+	 * @throws Exception error whilst parsing semver string
 	 */
 	public Updater(Version version, String repository, boolean verbose) throws Exception {
 		if (version == null) {
@@ -230,7 +235,7 @@ public class Updater {
 				// BeYkeRYkt
 				this.body = body;
 
-				if (current.compare(version)) {
+				if (version != null && current.compare(version)) {
 					log(Level.INFO, "Hooray, we found a semver compliant update!");
 					this.result = Response.SUCCESS;
 				} else {
@@ -282,7 +287,7 @@ public class Updater {
 	}
 
 	/**
-	 * @return {@link de.albionco.updater.Response}
+	 * @return {@link ru.beykerykt.lightapi.updater.Response}
 	 */
 	public Response getResult() {
 		log(Level.INFO, "Somebody queried the update result");
@@ -315,10 +320,10 @@ public class Updater {
 	/**
 	 * Test if the version string contains a valid semver string
 	 *
-	 * @param version
-	 *            version to test
+	 * @param version version to test
 	 * @return true if valid
 	 */
+	@SuppressWarnings("WeakerAccess")
 	public static boolean isSemver(String version) {
 		return regex.matcher(version).matches();
 	}

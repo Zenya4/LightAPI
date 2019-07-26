@@ -1,18 +1,19 @@
-/**
+/*
  * The MIT License (MIT)
- * 
- * Copyright (c) 2015 - 2016
- * 
+ *
+ * Copyright (c) 2016 Vladimir Mikhailov <beykerykt@gmail.com>
+ * Copyright (c) 2019 Qveshn
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- *  
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -34,20 +35,43 @@ import ru.beykerykt.lightapi.chunks.ChunkInfo;
 public interface INMSHandler {
 
 	// Lights...
-	public void createLight(World world, int x, int y, int z, int light);
+	void createLight(World world, int x, int y, int z, int light);
 
-	public void deleteLight(World world, int x, int y, int z);
+	void deleteLight(World world, int x, int y, int z);
 
-	public void recalculateLight(World world, int x, int y, int z);
+	@Deprecated
+	void recalculateLight(World world, int x, int y, int z);
 
 	// Chunks...
-	public List<ChunkInfo> collectChunks(World world, int x, int y, int z);
+	List<ChunkInfo> collectChunks(World world, int blockX, int blockY, int blockZ, int lightLevel);
 
-	public void sendChunkUpdate(World world, int chunkX, int chunkZ, Collection<? extends Player> players);
+	@Deprecated
+	List<ChunkInfo> collectChunks(World world, int x, int y, int z);
 
-	public void sendChunkUpdate(World world, int chunkX, int chunkZ, Player player);
+	void sendChunkSectionsUpdate(
+			World world, int chunkX, int chunkZ, int sectionsMask, Collection<? extends Player> players
+	);
 
-	public void sendChunkUpdate(World world, int chunkX, int y, int chunkZ, Collection<? extends Player> players);
+	void sendChunkSectionsUpdate(World world, int chunkX, int chunkZ, int sectionsMask, Player player);
 
-	public void sendChunkUpdate(World world, int chunkX, int y, int chunkZ, Player player);
+	@Deprecated
+	void sendChunkUpdate(World world, int chunkX, int chunkZ, Collection<? extends Player> players);
+
+	@Deprecated
+	void sendChunkUpdate(World world, int chunkX, int chunkZ, Player player);
+
+	@Deprecated
+	void sendChunkUpdate(World world, int chunkX, int y, int chunkZ, Collection<? extends Player> players);
+
+	@Deprecated
+	void sendChunkUpdate(World world, int chunkX, int y, int chunkZ, Player player);
+
+	// Utils...
+	boolean isValidSectionY(int sectionY);
+
+	int asSectionMask(int sectionY);
+
+	Collection<? extends Player> filterVisiblePlayers(
+			World world, int chunkX, int chunkZ, Collection<? extends Player> players
+	);
 }

@@ -1,18 +1,19 @@
-/**
+/*
  * The MIT License (MIT)
- * 
- * Copyright (c) 2015 - 2016
- * 
+ *
+ * Copyright (c) 2017 Vladimir Mikhailov <beykerykt@gmail.com>
+ * Copyright (c) 2019 Qveshn
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- *  
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,12 +23,6 @@
  * SOFTWARE.
  */
 package ru.beykerykt.lightapi;
-
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Collection;
-import java.util.List;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -44,13 +39,10 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import ru.beykerykt.lightapi.chunks.ChunkCache;
 import ru.beykerykt.lightapi.chunks.ChunkInfo;
 import ru.beykerykt.lightapi.events.DeleteLightEvent;
 import ru.beykerykt.lightapi.events.SetLightEvent;
 import ru.beykerykt.lightapi.events.UpdateChunkEvent;
-import ru.beykerykt.lightapi.request.DataRequest;
 import ru.beykerykt.lightapi.request.RequestSteamMachine;
 import ru.beykerykt.lightapi.server.ServerModInfo;
 import ru.beykerykt.lightapi.server.ServerModManager;
@@ -62,7 +54,15 @@ import ru.beykerykt.lightapi.updater.UpdateType;
 import ru.beykerykt.lightapi.updater.Updater;
 import ru.beykerykt.lightapi.updater.Version;
 import ru.beykerykt.lightapi.utils.BungeeChatHelperClass;
-import ru.beykerykt.lightapi.utils.Metrics;
+import ru.beykerykt.lightapi.utils.Debug;
+import ru.beykerykt.lightapi.utils.Metrics_bStats;
+import ru.beykerykt.lightapi.utils.Metrics_mcstats;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 public class LightAPI extends JavaPlugin implements Listener {
 
@@ -77,9 +77,13 @@ public class LightAPI extends JavaPlugin implements Listener {
 	private int delayUpdate = 40;
 	private boolean viewChangelog;
 
+	// To synchronize nms create/delete light methods to avoid conflicts in multi-threaded calls. Got a better idea?
+	private static final Object lock = new Object();
+
 	@SuppressWarnings("static-access")
 	@Override
 	public void onLoad() {
+		Debug.setPrefix(getName(), ChatColor.YELLOW, ChatColor.GOLD);
 		this.plugin = this;
 		this.machine = new RequestSteamMachine();
 
@@ -103,6 +107,7 @@ public class LightAPI extends JavaPlugin implements Listener {
 		spigot.getVersions().put("v1_12_R1", CraftBukkit_v1_12_R1.class);
 		spigot.getVersions().put("v1_13_R1", CraftBukkit_v1_13_R1.class);
 		spigot.getVersions().put("v1_13_R2", CraftBukkit_v1_13_R2.class);
+		spigot.getVersions().put("v1_14_R1", CraftBukkit_v1_14_R1.class);
 		ServerModManager.registerServerMod(spigot);
 
 		ServerModInfo paperspigot = new ServerModInfo("PaperSpigot");
@@ -129,7 +134,7 @@ public class LightAPI extends JavaPlugin implements Listener {
 		tacospigot.getVersions().put("v1_13_R1", CraftBukkit_v1_13_R1.class);
 		tacospigot.getVersions().put("v1_13_R2", CraftBukkit_v1_13_R2.class);
 		ServerModManager.registerServerMod(tacospigot);
-		
+
 		ServerModInfo akarin = new ServerModInfo("Akarin");
 		akarin.getVersions().put("v1_9_R1", CraftBukkit_v1_9_R1.class);
 		akarin.getVersions().put("v1_9_R2", CraftBukkit_v1_9_R2.class);
@@ -149,7 +154,9 @@ public class LightAPI extends JavaPlugin implements Listener {
 			File file = new File(getDataFolder(), "config.yml");
 			if (file.exists()) {
 				if (fc.getInt("version") < configVer) {
-					file.delete(); // got a better idea?
+					if (!file.delete()) { // got a better idea?
+						throw new IOException("Can not delete " + file.getPath());
+					}
 					generateConfig(file);
 				}
 			} else {
@@ -166,28 +173,33 @@ public class LightAPI extends JavaPlugin implements Listener {
 		this.repo = getConfig().getString("updater.repo");
 		this.delayUpdate = getConfig().getInt("updater.update-delay-ticks");
 		this.viewChangelog = getConfig().getBoolean("updater.view-changelog");
+		Debug.setEnable(getConfig().getBoolean("debug"));
 
 		// init nms
 		try {
 			ServerModManager.init();
-		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e1) {
-			e1.printStackTrace();
-			getServer().getPluginManager().disablePlugin(this);
-			return;
 		} catch (UnknownNMSVersionException e) {
-			log(Bukkit.getConsoleSender(), ChatColor.RED + "Could not find handler for this Bukkit " + ChatColor.WHITE + e.getModName() + ChatColor.RED + " implementation " + ChatColor.WHITE + e.getNmsVersion() + ChatColor.RED + " version.");
+			log(Bukkit.getConsoleSender(), ChatColor.RED + "Could not find handler for this Bukkit "
+					+ ChatColor.WHITE + e.getModName()
+					+ ChatColor.RED + " implementation "
+					+ ChatColor.WHITE + e.getNmsVersion()
+					+ ChatColor.RED + " version.");
 			e.printStackTrace();
 			getServer().getPluginManager().disablePlugin(this);
 			return;
 		} catch (UnknownModImplementationException e) {
-			log(Bukkit.getConsoleSender(), ChatColor.RED + "Could not find handler for this Bukkit implementation: " + ChatColor.WHITE + e.getModName());
+			log(Bukkit.getConsoleSender(), ChatColor.RED + "Could not find handler for this Bukkit implementation: "
+					+ ChatColor.WHITE + e.getModName());
+			e.printStackTrace();
+			getServer().getPluginManager().disablePlugin(this);
+			return;
+		} catch (Exception e) {
 			e.printStackTrace();
 			getServer().getPluginManager().disablePlugin(this);
 			return;
 		}
 
-		ChunkCache.CHUNK_INFO_QUEUE.clear(); // workaround concurrent ClassLoader.definePackage due to registerEvents
-		machine.start(LightAPI.getInstance().getUpdateDelayTicks(), LightAPI.getInstance().getMaxIterationsPerTick()); // TEST
+		machine.start(LightAPI.getInstance().getUpdateDelayTicks(), LightAPI.getInstance().getMaxIterationsPerTick());
 		getServer().getPluginManager().registerEvents(this, this);
 
 		if (enableUpdater) {
@@ -197,17 +209,17 @@ public class LightAPI extends JavaPlugin implements Listener {
 
 		// init metrics
 		try {
-			Metrics metrics = new Metrics(this);
+			Metrics_mcstats metrics = new Metrics_mcstats(this, getName() + "-fork");
 			metrics.start();
 		} catch (IOException e) {
-			// nothing...
+			// Failed to submit the stats :-(
 		}
+		new Metrics_bStats(this, getName() + "-fork");
 	}
 
 	@Override
 	public void onDisable() {
 		machine.shutdown();
-		ChunkCache.CHUNK_INFO_QUEUE.clear();
 	}
 
 	public void log(CommandSender sender, String message) {
@@ -218,74 +230,117 @@ public class LightAPI extends JavaPlugin implements Listener {
 		return plugin;
 	}
 
+	@SuppressWarnings("unused")
 	public static boolean createLight(Location location, int lightlevel, boolean async) {
-		return createLight(location.getWorld(), location.getBlockX(), location.getBlockY(), location.getBlockZ(), lightlevel, async);
+		return createLight(
+				location.getWorld(),
+				location.getBlockX(),
+				location.getBlockY(),
+				location.getBlockZ(),
+				lightlevel, async);
 	}
 
-	public static boolean createLight(final World world, final int x, final int y, final int z, final int lightlevel, boolean async) {
+	@SuppressWarnings("WeakerAccess")
+	public static boolean createLight(
+			World world, int x, final int y, final int z, final int lightlevel, boolean async) {
 		if (getInstance().isEnabled()) {
 			final SetLightEvent event = new SetLightEvent(world, x, y, z, lightlevel, async);
 			Bukkit.getPluginManager().callEvent(event);
 
 			if (!event.isCancelled()) {
-				Block adjacent = getAdjacentAirBlock(world.getBlockAt(event.getX(), event.getY(), event.getZ()));
-				final int lx = adjacent.getX();
-				final int ly = adjacent.getY();
-				final int lz = adjacent.getZ();
-
-				if (event.isAsync()) {
-					machine.addToQueue(new DataRequest() {
-						@Override
-						public void process() {
-							ServerModManager.getNMSHandler().createLight(event.getWorld(), event.getX(), event.getY(), event.getZ(), event.getLightLevel());
-							ServerModManager.getNMSHandler().recalculateLight(event.getWorld(), lx, ly, lz);
+				Runnable request = new Runnable() {
+					@Override
+					public void run() {
+						synchronized (lock) {
+							ServerModManager.getNMSHandler().createLight(
+									event.getWorld(),
+									event.getX(),
+									event.getY(),
+									event.getZ(),
+									event.getLightLevel());
 						}
-					});
-					return true;
+					}
+				};
+				if (event.isAsync()) {
+					machine.addToQueue(request);
+				} else {
+					request.run();
 				}
-				ServerModManager.getNMSHandler().createLight(event.getWorld(), event.getX(), event.getY(), event.getZ(), event.getLightLevel());
-				ServerModManager.getNMSHandler().recalculateLight(event.getWorld(), lx, ly, lz);
 				return true;
 			}
 		}
 		return false;
 	}
 
+	@SuppressWarnings("unused")
 	public static boolean deleteLight(Location location, boolean async) {
-		return deleteLight(location.getWorld(), location.getBlockX(), location.getBlockY(), location.getBlockZ(), async);
+		return deleteLight(
+				location.getWorld(),
+				location.getBlockX(),
+				location.getBlockY(),
+				location.getBlockZ(),
+				async);
 	}
 
+	@SuppressWarnings("WeakerAccess")
 	public static boolean deleteLight(final World world, final int x, final int y, final int z, boolean async) {
 		if (getInstance().isEnabled()) {
 			final DeleteLightEvent event = new DeleteLightEvent(world, x, y, z, async);
 			Bukkit.getPluginManager().callEvent(event);
 
 			if (!event.isCancelled()) {
+				Runnable request = new Runnable() {
+					@Override
+					public void run() {
+						ServerModManager.getNMSHandler().deleteLight(
+								event.getWorld(),
+								event.getX(),
+								event.getY(),
+								event.getZ());
+					}
+				};
 				if (event.isAsync()) {
-					machine.addToQueue(new DataRequest() {
-						@Override
-						public void process() {
-							ServerModManager.getNMSHandler().deleteLight(event.getWorld(), event.getX(), event.getY(), event.getZ());
-						}
-					});
-					return true;
+					machine.addToQueue(request);
+				} else {
+					request.run();
 				}
-				ServerModManager.getNMSHandler().deleteLight(event.getWorld(), event.getX(), event.getY(), event.getZ());
 				return true;
 			}
 		}
 		return false;
 	}
 
+	@Deprecated
 	public static List<ChunkInfo> collectChunks(Location location) {
-		return collectChunks(location.getWorld(), location.getBlockX(), location.getBlockY(), location.getBlockZ());
+		return collectChunks(
+				location.getWorld(),
+				location.getBlockX(),
+				location.getBlockY(),
+				location.getBlockZ(),
+				15);
 	}
 
+	@Deprecated
 	public static List<ChunkInfo> collectChunks(final World world, final int x, final int y, final int z) {
+		return collectChunks(world, x, y, z, 15);
+	}
+
+	@SuppressWarnings("unused")
+	public static List<ChunkInfo> collectChunks(Location location, int lightLevel) {
+		return collectChunks(
+				location.getWorld(),
+				location.getBlockX(),
+				location.getBlockY(),
+				location.getBlockZ(),
+				lightLevel);
+	}
+
+	@SuppressWarnings("WeakerAccess")
+	public static List<ChunkInfo> collectChunks(World world, int x, int y, int z, int lightLevel) {
 		if (getInstance().isEnabled()) {
-			return ServerModManager.getNMSHandler().collectChunks(world, x, y, z);
+			return ServerModManager.getNMSHandler().collectChunks(world, x, y, z, lightLevel);
 		}
-		return null;
+		return new ArrayList<ChunkInfo>();
 	}
 
 	@Deprecated
@@ -293,33 +348,33 @@ public class LightAPI extends JavaPlugin implements Listener {
 		return updateChunk(info);
 	}
 
+	@SuppressWarnings("WeakerAccess")
 	public static boolean updateChunk(ChunkInfo info) {
 		if (getInstance().isEnabled()) {
 			UpdateChunkEvent event = new UpdateChunkEvent(info);
 			Bukkit.getPluginManager().callEvent(event);
 			if (!event.isCancelled()) {
-				if (ChunkCache.CHUNK_INFO_QUEUE.contains(event.getChunkInfo())) {
-					int index = ChunkCache.CHUNK_INFO_QUEUE.indexOf(event.getChunkInfo());
-					ChunkInfo previous = ChunkCache.CHUNK_INFO_QUEUE.get(index);
-					if (previous.getChunkYHeight() > event.getChunkInfo().getChunkYHeight()) {
-						event.getChunkInfo().setChunkYHeight(previous.getChunkYHeight());
-					}
-					ChunkCache.CHUNK_INFO_QUEUE.remove(index);
-				}
-				ChunkCache.CHUNK_INFO_QUEUE.add(event.getChunkInfo());
+				machine.addChunkToUpdate(info);
 				return true;
 			}
 		}
 		return false;
 	}
 
+	@Deprecated
 	public static boolean updateChunks(Location location, Collection<? extends Player> players) {
-		return updateChunks(location.getWorld(), location.getBlockX(), location.getBlockY(), location.getBlockZ(), players);
+		return updateChunks(
+				location.getWorld(),
+				location.getBlockX(),
+				location.getBlockY(),
+				location.getBlockZ(),
+				players);
 	}
 
+	@Deprecated
 	public static boolean updateChunks(World world, int x, int y, int z, Collection<? extends Player> players) {
 		if (getInstance().isEnabled()) {
-			for (ChunkInfo info : collectChunks(world, x, y, z)) {
+			for (ChunkInfo info : collectChunks(world, x, y, z, 15)) {
 				info.setReceivers(players);
 				updateChunk(info);
 			}
@@ -328,20 +383,32 @@ public class LightAPI extends JavaPlugin implements Listener {
 		return false;
 	}
 
+	@Deprecated
 	public static boolean updateChunk(Location location, Collection<? extends Player> players) {
-		return updateChunk(location.getWorld(), location.getBlockX(), location.getBlockY(), location.getBlockZ(), players);
+		return updateChunk(
+				location.getWorld(),
+				location.getBlockX(),
+				location.getBlockY(),
+				location.getBlockZ(),
+				players);
 	}
 
+	@Deprecated
 	public static boolean updateChunk(World world, int x, int y, int z, Collection<? extends Player> players) {
 		if (getInstance().isEnabled()) {
-			ServerModManager.getNMSHandler().sendChunkUpdate(world, x >> 4, y, z >> 4, players);
+			updateChunk(new ChunkInfo(world, x, y - 1, z, players));
+			updateChunk(new ChunkInfo(world, x, y, z, players));
+			updateChunk(new ChunkInfo(world, x, y + 1, z, players));
 			return true;
 		}
 		return false;
 	}
 
-	private static BlockFace[] SIDES = { BlockFace.UP, BlockFace.DOWN, BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST };
+	private static BlockFace[] SIDES = {
+			BlockFace.UP, BlockFace.DOWN, BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST
+	};
 
+	@Deprecated
 	public static Block getAdjacentAirBlock(Block block) {
 		for (BlockFace face : SIDES) {
 			if (block.getY() == 0x0 && face == BlockFace.DOWN)
@@ -369,26 +436,32 @@ public class LightAPI extends JavaPlugin implements Listener {
 			fc.set("updater.repo", "Qveshn/LightAPI");
 			fc.set("updater.update-delay-ticks", 40);
 			fc.set("updater.view-changelog", false);
+			fc.set("debug", false);
 			saveConfig();
 		}
 	}
 
+	@SuppressWarnings("WeakerAccess")
 	public int getUpdateDelayTicks() {
 		return update_delay_ticks;
 	}
 
+	@SuppressWarnings("unused")
 	public void setUpdateDelayTicks(int update_delay_ticks) {
 		this.update_delay_ticks = update_delay_ticks;
 	}
 
+	@SuppressWarnings("WeakerAccess")
 	public int getMaxIterationsPerTick() {
 		return max_iterations_per_tick;
 	}
 
+	@SuppressWarnings("unused")
 	public void setMaxIterationsPerTick(int max_iterations_per_tick) {
 		this.max_iterations_per_tick = max_iterations_per_tick;
 	}
 
+	@SuppressWarnings("unused")
 	@EventHandler
 	public void onPlayerJoin(PlayerJoinEvent event) {
 		final Player player = event.getPlayer();
@@ -406,18 +479,20 @@ public class LightAPI extends JavaPlugin implements Listener {
 			@Override
 			public void run() {
 				Version version = Version.parse(getDescription().getVersion());
-				Updater updater;
 				try {
-					updater = new Updater(version, repo, true);
+					Updater updater = new Updater(version, repo, false);
 
 					Response response = updater.getResult();
 					if (response == Response.SUCCESS) {
-						log(sender, ChatColor.WHITE + "New update is available: " + ChatColor.YELLOW + updater.getLatestVersion() + ChatColor.WHITE + "!");
+						log(sender, ChatColor.WHITE + "New update is available: "
+								+ ChatColor.YELLOW + updater.getLatestVersion()
+								+ ChatColor.WHITE + "!");
 						UpdateType update = UpdateType.compareVersion(updater.getVersion().toString());
 						log(sender, ChatColor.WHITE + "Repository: " + repo);
 						log(sender, ChatColor.WHITE + "Update type: " + update.getName());
 						if (update == UpdateType.MAJOR) {
-							log(sender, ChatColor.RED + "WARNING ! A MAJOR UPDATE! Not updating plugins may produce errors after starting the server! Notify developers about update.");
+							log(sender, ChatColor.RED + "WARNING ! A MAJOR UPDATE! Not updating plugins may"
+									+ " produce errors after starting the server! Notify developers about update.");
 						}
 						if (viewChangelog) {
 							log(sender, ChatColor.WHITE + "Changes: ");
@@ -437,6 +512,7 @@ public class LightAPI extends JavaPlugin implements Listener {
 		}, delay);
 	}
 
+	@SuppressWarnings("NullableProblems")
 	@Override
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 		if (command.getName().equalsIgnoreCase("lightapi")) {
@@ -446,11 +522,16 @@ public class LightAPI extends JavaPlugin implements Listener {
 					if (BungeeChatHelperClass.hasBungeeChatAPI()) {
 						BungeeChatHelperClass.sendMessageAboutPlugin(player, this);
 					} else {
-						player.sendMessage(ChatColor.AQUA + " ------- <LightAPI " + ChatColor.WHITE + getDescription().getVersion() + "> ------- ");
-						player.sendMessage(ChatColor.AQUA + " Current version: " + ChatColor.WHITE + getDescription().getVersion());
-						player.sendMessage(ChatColor.AQUA + " Server name: " + ChatColor.WHITE + getServer().getName());
-						player.sendMessage(ChatColor.AQUA + " Server version: " + ChatColor.WHITE + getServer().getVersion());
-						player.sendMessage(ChatColor.AQUA + " Source code: " + ChatColor.WHITE + "http://github.com/BeYkeRYkt/LightAPI/");
+						player.sendMessage(ChatColor.AQUA + " ------- <LightAPI "
+								+ ChatColor.WHITE + getDescription().getVersion() + "> ------- ");
+						player.sendMessage(ChatColor.AQUA + " Current version: "
+								+ ChatColor.WHITE + getDescription().getVersion());
+						player.sendMessage(ChatColor.AQUA + " Server name: "
+								+ ChatColor.WHITE + getServer().getName());
+						player.sendMessage(ChatColor.AQUA + " Server version: "
+								+ ChatColor.WHITE + getServer().getVersion());
+						player.sendMessage(ChatColor.AQUA + " Source code: "
+								+ ChatColor.WHITE + "http://github.com/BeYkeRYkt/LightAPI/");
 						player.sendMessage(ChatColor.AQUA + " Developer: " + ChatColor.WHITE + "BeYkeRYkt");
 						player.sendMessage("");
 						player.sendMessage(ChatColor.WHITE + " Licensed under: " + ChatColor.AQUA + "MIT License");
@@ -463,25 +544,33 @@ public class LightAPI extends JavaPlugin implements Listener {
 							log(player, ChatColor.RED + "You don't have permission!");
 						}
 					} else {
-						log(player, ChatColor.RED + "Hmm... This command does not exist. Are you sure write correctly?");
+						log(player,
+								ChatColor.RED + "Hmm... This command does not exist. Are you sure write correctly?");
 					}
 				}
 			} else if (sender instanceof ConsoleCommandSender) {
 				ConsoleCommandSender console = (ConsoleCommandSender) sender;
 				if (args.length == 0) {
-					console.sendMessage(ChatColor.AQUA + " ------- <LightAPI " + ChatColor.WHITE + getDescription().getVersion() + "> ------- ");
-					console.sendMessage(ChatColor.AQUA + " Current version: " + ChatColor.WHITE + getDescription().getVersion());
-					console.sendMessage(ChatColor.AQUA + " Server name: " + ChatColor.WHITE + getServer().getName());
-					console.sendMessage(ChatColor.AQUA + " Server version: " + ChatColor.WHITE + getServer().getVersion());
-					console.sendMessage(ChatColor.AQUA + " Source code: " + ChatColor.WHITE + "http://github.com/BeYkeRYkt/LightAPI/");
-					console.sendMessage(ChatColor.AQUA + " Developer: " + ChatColor.WHITE + "BeYkeRYkt");
+					console.sendMessage(ChatColor.AQUA + " ------- <LightAPI "
+							+ ChatColor.WHITE + getDescription().getVersion() + "> ------- ");
+					console.sendMessage(ChatColor.AQUA + " Current version: "
+							+ ChatColor.WHITE + getDescription().getVersion());
+					console.sendMessage(ChatColor.AQUA + " Server name: "
+							+ ChatColor.WHITE + getServer().getName());
+					console.sendMessage(ChatColor.AQUA + " Server version: "
+							+ ChatColor.WHITE + getServer().getVersion());
+					console.sendMessage(ChatColor.AQUA + " Source code: "
+							+ ChatColor.WHITE + "http://github.com/BeYkeRYkt/LightAPI/");
+					console.sendMessage(ChatColor.AQUA + " Developer: "
+							+ ChatColor.WHITE + "BeYkeRYkt");
 					console.sendMessage("");
 					console.sendMessage(ChatColor.WHITE + " Licensed under: " + ChatColor.AQUA + "MIT License");
 				} else {
 					if (args[0].equalsIgnoreCase("update")) {
 						runUpdater(console, 2);
 					} else {
-						log(console, ChatColor.RED + "Hmm... This command does not exist. Are you sure write correctly?");
+						log(console,
+								ChatColor.RED + "Hmm... This command does not exist. Are you sure write correctly?");
 					}
 				}
 			}

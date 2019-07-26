@@ -1,7 +1,6 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Vladimir Mikhailov <beykerykt@gmail.com>
  * Copyright (c) 2019 Qveshn
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -25,63 +24,16 @@
 package ru.beykerykt.lightapi.chunks;
 
 import org.bukkit.World;
-import org.bukkit.entity.Player;
 
-import java.util.Collection;
+public class ChunkLocation {
+	private final World world;
+	private final int x;
+	private final int z;
 
-public class ChunkInfo {
-
-	private World world;
-	private int x;
-	private int y;
-	private int z;
-
-	@SuppressWarnings("DeprecatedIsStillUsed")
-	@Deprecated // Bukkit.getOnlinePlayers() will be examined
-	private Collection<? extends Player> receivers;
-
-	@Deprecated
-	public ChunkInfo(World world, int chunkX, int chunkZ, Collection<? extends Player> players) {
-		this(world, chunkX, 256, chunkZ, players);
-	}
-
-	@SuppressWarnings("deprecation")
-	public ChunkInfo(World world, int chunkX, int chunk_y_height, int chunkZ, Collection<? extends Player> players) {
+	public ChunkLocation(World world, int x, int z) {
 		this.world = world;
-		this.x = chunkX;
-		this.y = chunk_y_height;
-		this.z = chunkZ;
-		this.receivers = players;
-	}
-
-	public World getWorld() {
-		return world;
-	}
-
-	public int getChunkX() {
-		return x;
-	}
-
-	public int getChunkZ() {
-		return z;
-	}
-
-	public int getChunkYHeight() {
-		return y;
-	}
-
-	public void setChunkYHeight(int y) {
-		this.y = y;
-	}
-
-	@Deprecated
-	public Collection<? extends Player> getReceivers() {
-		return receivers;
-	}
-
-	@Deprecated
-	public void setReceivers(Collection<? extends Player> receivers) {
-		this.receivers = receivers;
+		this.x = x;
+		this.z = z;
 	}
 
 	@Override
@@ -91,8 +43,19 @@ public class ChunkInfo {
 		result = prime * result + ((world == null) ? 0 : world.hashCode());
 		result = prime * result + x;
 		result = prime * result + z;
-		result = prime * result + y;
 		return result;
+	}
+
+	public World getWorld() {
+		return world;
+	}
+
+	public int getX() {
+		return x;
+	}
+
+	public int getZ() {
+		return z;
 	}
 
 	@Override
@@ -103,10 +66,10 @@ public class ChunkInfo {
 		if (obj == null) {
 			return false;
 		}
-		if (!(obj instanceof ChunkInfo)) {
+		if (!(obj instanceof ChunkLocation)) {
 			return false;
 		}
-		ChunkInfo other = (ChunkInfo) obj;
+		ChunkLocation other = (ChunkLocation) obj;
 		if (world == null) {
 			if (other.world != null) {
 				return false;
@@ -114,11 +77,12 @@ public class ChunkInfo {
 		} else if (!world.getName().equals(other.world.getName())) {
 			return false;
 		}
-		return x == other.x && z == other.z && y == other.y;
+		return x == other.x && z == other.z;
 	}
+
 
 	@Override
 	public String toString() {
-		return "ChunkInfo [world=" + world + ", x=" + x + ", y=" + y + ", z=" + z + "]";
+		return "ChunkCoords [world=" + (world == null ? null : world.getName()) + ", x=" + x + ", z=" + z + "]";
 	}
 }
