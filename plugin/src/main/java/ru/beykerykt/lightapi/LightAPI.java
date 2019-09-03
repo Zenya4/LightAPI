@@ -354,11 +354,16 @@ public class LightAPI extends JavaPlugin implements Listener {
 
 	@SuppressWarnings("WeakerAccess")
 	public static boolean updateChunk(ChunkInfo info) {
+		return updateChunk(info, null);
+	}
+
+	@SuppressWarnings("WeakerAccess")
+	public static boolean updateChunk(ChunkInfo info, Collection<? extends Player> players) {
 		if (getInstance().isEnabled()) {
 			UpdateChunkEvent event = new UpdateChunkEvent(info);
 			Bukkit.getPluginManager().callEvent(event);
 			if (!event.isCancelled()) {
-				machine.addChunkToUpdate(info);
+				machine.addChunkToUpdate(info, players);
 				return true;
 			}
 		}

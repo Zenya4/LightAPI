@@ -35,9 +35,6 @@ public class ChunkInfo {
 	private int x;
 	private int y;
 	private int z;
-
-	@SuppressWarnings("DeprecatedIsStillUsed")
-	@Deprecated // Bukkit.getOnlinePlayers() will be examined
 	private Collection<? extends Player> receivers;
 
 	@Deprecated
@@ -45,7 +42,6 @@ public class ChunkInfo {
 		this(world, chunkX, 256, chunkZ, players);
 	}
 
-	@SuppressWarnings("deprecation")
 	public ChunkInfo(World world, int chunkX, int chunk_y_height, int chunkZ, Collection<? extends Player> players) {
 		this.world = world;
 		this.x = chunkX;
@@ -70,16 +66,15 @@ public class ChunkInfo {
 		return y;
 	}
 
+	@SuppressWarnings("unused")
 	public void setChunkYHeight(int y) {
 		this.y = y;
 	}
 
-	@Deprecated
 	public Collection<? extends Player> getReceivers() {
 		return receivers;
 	}
 
-	@Deprecated
 	public void setReceivers(Collection<? extends Player> receivers) {
 		this.receivers = receivers;
 	}

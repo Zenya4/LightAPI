@@ -2,6 +2,7 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2016 Vladimir Mikhailov <beykerykt@gmail.com>
+ * Copyright (c) 2019 Qveshn
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,10 +24,10 @@
  */
 package ru.beykerykt.lightapi.request;
 
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import ru.beykerykt.lightapi.chunks.ChunkInfo;
 import ru.beykerykt.lightapi.chunks.ChunkLocation;
+import ru.beykerykt.lightapi.chunks.ChunkUpdateInfo;
 import ru.beykerykt.lightapi.server.ServerModManager;
 import ru.beykerykt.lightapi.server.nms.INMSHandler;
 import ru.beykerykt.lightapi.utils.Debug;
@@ -39,6 +40,7 @@ public class RequestSteamMachine implements Runnable {
 	private boolean isStarted;
 	private Queue<Runnable> REQUEST_QUEUE = new ConcurrentLinkedQueue<Runnable>();
 	private int maxIterationsPerTick;
+	private Map<ChunkLocation, ChunkUpdateInfo> chunksToUpdate = new HashMap<ChunkLocation, ChunkUpdateInfo>();
 
 	// THREADS
 	private ScheduledFuture<?> sch;
@@ -75,19 +77,23 @@ public class RequestSteamMachine implements Runnable {
 		return false;
 	}
 
-	private Map<ChunkLocation, Integer> chunksToUpdate = new HashMap<ChunkLocation, Integer>();
-
-	public void addChunkToUpdate(ChunkInfo info) {
+	public void addChunkToUpdate(final ChunkInfo info, Collection<? extends Player> receivers) {
 		int SectionY = info.getChunkYHeight() >> 4;
 		INMSHandler nmsHandler = ServerModManager.getNMSHandler();
 		if (nmsHandler.isValidSectionY(SectionY)) {
 			final ChunkLocation chunk = new ChunkLocation(info.getWorld(), info.getChunkX(), info.getChunkZ());
 			final int sectionYMask = nmsHandler.asSectionMask(SectionY);
+			final Collection<Player> players = new ArrayList<Player>(
+					receivers != null ? receivers : info.getReceivers()
+			);
 			addToQueue(new Runnable() {
 				@Override
 				public void run() {
-					Integer sectionMask = chunksToUpdate.get(chunk);
-					chunksToUpdate.put(chunk, (sectionMask == null ? 0 : sectionMask) | sectionYMask);
+					ChunkUpdateInfo chunkUpdateInfo = chunksToUpdate.get(chunk);
+					if (chunkUpdateInfo == null) {
+						chunksToUpdate.put(chunk, chunkUpdateInfo = new ChunkUpdateInfo());
+					}
+					chunkUpdateInfo.add(sectionYMask, players);
 				}
 			});
 		}
@@ -112,18 +118,18 @@ public class RequestSteamMachine implements Runnable {
 			}
 
 			INMSHandler nmsHandler = ServerModManager.getNMSHandler();
-			Collection<? extends Player> players = Bukkit.getOnlinePlayers();
 
-			for (Map.Entry<ChunkLocation, Integer> item : chunksToUpdate.entrySet()) {
+			for (Map.Entry<ChunkLocation, ChunkUpdateInfo> item : chunksToUpdate.entrySet()) {
 				ChunkLocation chunk = item.getKey();
-				int sectionMask = item.getValue();
-				Collection<? extends Player> p =
-						nmsHandler.filterVisiblePlayers(chunk.getWorld(), chunk.getX(), chunk.getZ(), players);
-				nmsHandler.sendChunkSectionsUpdate(chunk.getWorld(), chunk.getX(), chunk.getZ(), sectionMask, p);
+				ChunkUpdateInfo chunkUpdateInfo = item.getValue();
+				int sectionMask = chunkUpdateInfo.getSectionMask();
+				Collection<? extends Player> players = nmsHandler.filterVisiblePlayers(
+						chunk.getWorld(), chunk.getX(), chunk.getZ(), chunkUpdateInfo.getPlayers());
+				nmsHandler.sendChunkSectionsUpdate(chunk.getWorld(), chunk.getX(), chunk.getZ(), sectionMask, players);
 				if (debug) {
-					totalSends += p.size();
+					totalSends += players.size();
 					totalSections += Integer.bitCount(sectionMask);
-					usedPlayers.addAll(p);
+					usedPlayers.addAll(players);
 				}
 			}
 
