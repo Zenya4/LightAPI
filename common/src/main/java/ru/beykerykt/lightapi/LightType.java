@@ -1,8 +1,9 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Vladimir Mikhailov <beykerykt@gmail.com>
+ * Copyright (c) 2016 Vladimir Mikhailov <beykerykt@gmail.com>
  * Copyright (c) 2016-2017 The ImplexDevOne Project
+ * Copyright (c) 2019 Qveshn
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,27 +23,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package ru.beykerykt.lightapi.server.nms.craftbukkit;
+package ru.beykerykt.lightapi;
 
 public enum LightType {
-
-	/**
-	 * Light emanates from the block (torch, glowstone, etc.)
-	 */
-	BLOCK(0),
-
-	/**
-	 * N/A
-	 */
-	SKY(1);
-
-	private final int id;
-
-	private LightType(int id) {
-		this.id = id;
-	}
-
-	public int getId() {
-		return id;
-	}
+	SKY,
+	BLOCK
 }

@@ -30,6 +30,7 @@ import ru.beykerykt.lightapi.chunks.ChunkLocation;
 import ru.beykerykt.lightapi.chunks.ChunkUpdateInfo;
 import ru.beykerykt.lightapi.server.ServerModManager;
 import ru.beykerykt.lightapi.server.nms.INMSHandler;
+import ru.beykerykt.lightapi.LightType;
 import ru.beykerykt.lightapi.utils.Debug;
 
 import java.util.*;
@@ -77,8 +78,8 @@ public class RequestSteamMachine implements Runnable {
 		return false;
 	}
 
-	public void addChunkToUpdate(final ChunkInfo info, Collection<? extends Player> receivers) {
-		int SectionY = info.getChunkYHeight() >> 4;
+	public void addChunkToUpdate(final ChunkInfo info, final LightType lightType, Collection<? extends Player> receivers) {
+		int SectionY = info.getChunkY();
 		INMSHandler nmsHandler = ServerModManager.getNMSHandler();
 		if (nmsHandler.isValidSectionY(SectionY)) {
 			final ChunkLocation chunk = new ChunkLocation(info.getWorld(), info.getChunkX(), info.getChunkZ());
@@ -93,7 +94,7 @@ public class RequestSteamMachine implements Runnable {
 					if (chunkUpdateInfo == null) {
 						chunksToUpdate.put(chunk, chunkUpdateInfo = new ChunkUpdateInfo());
 					}
-					chunkUpdateInfo.add(sectionYMask, players);
+					chunkUpdateInfo.add(lightType, sectionYMask, players);
 				}
 			});
 		}
@@ -122,13 +123,15 @@ public class RequestSteamMachine implements Runnable {
 			for (Map.Entry<ChunkLocation, ChunkUpdateInfo> item : chunksToUpdate.entrySet()) {
 				ChunkLocation chunk = item.getKey();
 				ChunkUpdateInfo chunkUpdateInfo = item.getValue();
-				int sectionMask = chunkUpdateInfo.getSectionMask();
+				int sectionMaskSky = chunkUpdateInfo.getSectionMaskSky();
+				int sectionMaskBlock = chunkUpdateInfo.getSectionMaskBlock();
 				Collection<? extends Player> players = nmsHandler.filterVisiblePlayers(
 						chunk.getWorld(), chunk.getX(), chunk.getZ(), chunkUpdateInfo.getPlayers());
-				nmsHandler.sendChunkSectionsUpdate(chunk.getWorld(), chunk.getX(), chunk.getZ(), sectionMask, players);
+				nmsHandler.sendChunkSectionsUpdate(chunk.getWorld(), chunk.getX(), chunk.getZ(),
+						sectionMaskSky, sectionMaskBlock, players);
 				if (debug) {
 					totalSends += players.size();
-					totalSections += Integer.bitCount(sectionMask);
+					totalSections += Integer.bitCount(sectionMaskSky | sectionMaskBlock);
 					usedPlayers.addAll(players);
 				}
 			}

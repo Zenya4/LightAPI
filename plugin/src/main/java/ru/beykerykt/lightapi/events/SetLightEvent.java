@@ -2,6 +2,7 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2016 Vladimir Mikhailov <beykerykt@gmail.com>
+ * Copyright (c) 2019 Qveshn
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +28,7 @@ import org.bukkit.World;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
+import ru.beykerykt.lightapi.LightType;
 
 public class SetLightEvent extends Event implements Cancellable {
 
@@ -36,14 +38,21 @@ public class SetLightEvent extends Event implements Cancellable {
 	private int x;
 	private int y;
 	private int z;
+	private LightType lightType;
 	private int level;
 	private boolean async;
 
+	@Deprecated
 	public SetLightEvent(World world, int x, int y, int z, int level, boolean async) {
+		this(world, x, y, z, LightType.BLOCK, level, async);
+	}
+
+	public SetLightEvent(World world, int x, int y, int z, LightType lightType, int level, boolean async) {
 		this.world = world;
 		this.x = x;
 		this.y = y;
 		this.z = z;
+		this.lightType = lightType;
 		this.level = level;
 		this.async = async;
 	}
@@ -113,5 +122,13 @@ public class SetLightEvent extends Event implements Cancellable {
 
 	public void setAsync(boolean flag) {
 		this.async = flag;
+	}
+
+	public LightType getLightType() {
+		return lightType;
+	}
+
+	public void setLightType(LightType lightType) {
+		this.lightType = lightType;
 	}
 }

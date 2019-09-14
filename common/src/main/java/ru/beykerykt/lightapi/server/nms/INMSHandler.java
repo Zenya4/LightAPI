@@ -30,28 +30,40 @@ import java.util.List;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
+import ru.beykerykt.lightapi.LightType;
 import ru.beykerykt.lightapi.chunks.ChunkInfo;
 
 public interface INMSHandler {
 
 	// Lights...
+	@Deprecated
 	void createLight(World world, int x, int y, int z, int light);
 
+	void createLight(World world, int x, int y, int z, LightType lightType, int light);
+
+	@Deprecated
 	void deleteLight(World world, int x, int y, int z);
+
+	void deleteLight(World world, int x, int y, int z, LightType lightType);
 
 	@Deprecated
 	void recalculateLight(World world, int x, int y, int z);
 
 	// Chunks...
-	List<ChunkInfo> collectChunks(World world, int blockX, int blockY, int blockZ, int lightLevel);
-
 	@Deprecated
 	List<ChunkInfo> collectChunks(World world, int x, int y, int z);
 
+	@Deprecated
+	List<ChunkInfo> collectChunks(World world, int blockX, int blockY, int blockZ, int lightLevel);
+
+	List<ChunkInfo> collectChunks(World world, int blockX, int blockY, int blockZ, LightType lightType, int lightLevel);
+
+	@Deprecated
 	void sendChunkSectionsUpdate(
 			World world, int chunkX, int chunkZ, int sectionsMask, Collection<? extends Player> players
 	);
 
+	@Deprecated
 	void sendChunkSectionsUpdate(World world, int chunkX, int chunkZ, int sectionsMask, Player player);
 
 	@Deprecated
@@ -65,6 +77,24 @@ public interface INMSHandler {
 
 	@Deprecated
 	void sendChunkUpdate(World world, int chunkX, int y, int chunkZ, Player player);
+
+	void sendChunkSectionsUpdate(
+			World world,
+			int chunkX,
+			int chunkZ,
+			int sectionsMaskSky,
+			int sectionsMaskBlock,
+			Collection<? extends Player> players
+	);
+
+	void sendChunkSectionsUpdate(
+			World world,
+			int chunkX,
+			int chunkZ,
+			int sectionsMaskSky,
+			int sectionsMaskBlock,
+			Player player
+	);
 
 	// Utils...
 	boolean isValidSectionY(int sectionY);

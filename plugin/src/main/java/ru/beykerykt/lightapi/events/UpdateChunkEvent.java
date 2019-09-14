@@ -2,6 +2,7 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2016 Vladimir Mikhailov <beykerykt@gmail.com>
+ * Copyright (c) 2019 Qveshn
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,15 +29,22 @@ import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
 import ru.beykerykt.lightapi.chunks.ChunkInfo;
+import ru.beykerykt.lightapi.LightType;
 
 public class UpdateChunkEvent extends Event implements Cancellable {
 
 	private boolean cancel;
 	private static final HandlerList handlers = new HandlerList();
 	private ChunkInfo cCoord;
+	private LightType lightType;
 
 	public UpdateChunkEvent(ChunkInfo cCoord) {
+		this(cCoord, LightType.BLOCK);
+	}
+
+	public UpdateChunkEvent(ChunkInfo cCoord, LightType lightType) {
 		this.cCoord = cCoord;
+		this.lightType = lightType;
 	}
 
 	@Override
@@ -64,5 +72,13 @@ public class UpdateChunkEvent extends Event implements Cancellable {
 
 	public void setChunkInfo(ChunkInfo cCoord) {
 		this.cCoord = cCoord;
+	}
+
+	public LightType getLightType() {
+		return lightType;
+	}
+
+	public void setLightType(LightType lightType) {
+		this.lightType = lightType;
 	}
 }

@@ -28,36 +28,36 @@ import org.bukkit.World;
 import org.bukkit.craftbukkit.v1_13_R1.CraftWorld;
 import org.bukkit.craftbukkit.v1_13_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
+import ru.beykerykt.lightapi.LightType;
 import ru.beykerykt.lightapi.server.nms.NmsHandlerBase;
 
 public class CraftBukkit_v1_13_R1 extends NmsHandlerBase {
 
 	@Override
-	public void createLight(World world, int x, int y, int z, int light) {
+	public void createLight(World world, int x, int y, int z, LightType lightType, int light) {
 		WorldServer worldServer = ((CraftWorld) world).getHandle();
-		worldServer.a(EnumSkyBlock.BLOCK, new BlockPosition(x, y, z), light);
-		recalculateNeighbour(world, x, y, z);
+		worldServer.a(lightType == LightType.SKY ? EnumSkyBlock.SKY : EnumSkyBlock.BLOCK,
+				new BlockPosition(x, y, z), light);
+		recalculateNeighbours(world, x, y, z, lightType);
 	}
 
 	@Override
-	public void deleteLight(World world, int x, int y, int z) {
-		recalculateLighting(world, x, y, z);
+	public void deleteLight(World world, int x, int y, int z, LightType lightType) {
+		recalculateLighting(world, x, y, z, lightType);
 	}
 
-	@Deprecated
 	@Override
-	public void recalculateLight(World world, int x, int y, int z) {
-		recalculateLighting(world, x, y, z);
-	}
-
-	protected void recalculateLighting(World world, int x, int y, int z) {
+	protected void recalculateLighting(World world, int x, int y, int z, LightType lightType) {
 		WorldServer worldServer = ((CraftWorld) world).getHandle();
 		BlockPosition position = new BlockPosition(x, y, z);
-		worldServer.c(EnumSkyBlock.BLOCK, position);
+		worldServer.c(lightType == LightType.SKY ? EnumSkyBlock.SKY : EnumSkyBlock.BLOCK, position);
 	}
 
 	@Override
-	public void sendChunkSectionsUpdate(World world, int chunkX, int chunkZ, int sectionsMask, Player player) {
+	public void sendChunkSectionsUpdate(
+			World world, int chunkX, int chunkZ, int sectionsMaskSky, int sectionsMaskBlock, Player player
+	) {
+		int sectionsMask = sectionsMaskSky | sectionsMaskBlock;
 		Chunk chunk = ((CraftWorld) world).getHandle().getChunkAt(chunkX, chunkZ);
 		// The last argument is bit-mask what chunk sections to update. Mask containing
 		// 16 bits, with the lowest bit corresponding to chunk section 0 (y=0 to y=15)

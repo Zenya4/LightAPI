@@ -30,31 +30,59 @@ import org.bukkit.World;
 import org.bukkit.craftbukkit.v1_14_R1.CraftWorld;
 import org.bukkit.craftbukkit.v1_14_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
+import ru.beykerykt.lightapi.chunks.ChunkInfo;
+import ru.beykerykt.lightapi.LightType;
 import ru.beykerykt.lightapi.server.nms.NmsHandlerBase;
 import ru.beykerykt.lightapi.utils.Debug;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class CraftBukkit_v1_14_R1 extends NmsHandlerBase {
 
-	private boolean reflectionInited = false;
 	private Field lightEngine_ThreadedMailbox;
 	private Field threadedMailbox_State;
 	private Method threadedMailbox_DoLoopStep;
+	private Field lightEngineLayer_c;
+	private Method lightEngineStorage_c;
+	private Method lightEngineGraph_a;
 
-	@Override
-	public void createLight(World world, int x, int y, int z, int light) {
-		setRawLightLevel(world, LightType.BLOCK, x, y, z, light);
-		recalculateLighting(world, LightType.BLOCK, x, y, z);
+	public CraftBukkit_v1_14_R1() {
+		try {
+			threadedMailbox_DoLoopStep = ThreadedMailbox.class.getDeclaredMethod("f");
+			threadedMailbox_DoLoopStep.setAccessible(true);
+			threadedMailbox_State = ThreadedMailbox.class.getDeclaredField("c");
+			threadedMailbox_State.setAccessible(true);
+			lightEngine_ThreadedMailbox = LightEngineThreaded.class.getDeclaredField("b");
+			lightEngine_ThreadedMailbox.setAccessible(true);
+
+			lightEngineLayer_c = LightEngineLayer.class.getDeclaredField("c");
+			lightEngineLayer_c.setAccessible(true);
+			lightEngineStorage_c = LightEngineStorage.class.getDeclaredMethod("c");
+			lightEngineStorage_c.setAccessible(true);
+			lightEngineGraph_a = LightEngineGraph.class.getDeclaredMethod(
+					"a", long.class, long.class, int.class, boolean.class);
+			lightEngineGraph_a.setAccessible(true);
+		} catch (Exception e) {
+			throw toRuntimeException(e);
+		}
 	}
 
 	@Override
-	public void deleteLight(World world, int x, int y, int z) {
-		setRawLightLevel(world, LightType.BLOCK, x, y, z, 0);
-		recalculateLighting(world, LightType.BLOCK, x, y, z);
+	public void createLight(World world, int x, int y, int z, LightType lightType, int light) {
+		setRawLightLevel(world, lightType, x, y, z, light);
+		recalculateLighting(world, x, y, z, lightType);
+	}
+
+	@Override
+	public void deleteLight(World world, int x, int y, int z, LightType lightType) {
+		setRawLightLevel(world, lightType, x, y, z, 0);
+		recalculateLighting(world, x, y, z, lightType);
 	}
 
 	@SuppressWarnings("SameParameterValue")
@@ -67,33 +95,37 @@ public class CraftBukkit_v1_14_R1 extends NmsHandlerBase {
 		executeSync(lightEngine, new Runnable() {
 			@Override
 			public void run() {
-				if (type == LightType.BLOCK) {
+				if (type == LightType.SKY) {
+					LightEngineSky les = (LightEngineSky) lightEngine.a(EnumSkyBlock.SKY);
+					if (finalLightLevel == 0) {
+						les.a(position);
+					} else if (les.a(SectionPosition.a(position)) != null) {
+						try {
+							lightEngineLayer_a(les, position, finalLightLevel);
+						} catch (NullPointerException ignore) {
+							// To prevent problems with the absence of the NibbleArray, even
+							// if les.a(SectionPosition.a(position)) returns non-null value (corrupted data)
+						}
+					}
+				} else {
 					LightEngineBlock leb = (LightEngineBlock) lightEngine.a(EnumSkyBlock.BLOCK);
 					if (finalLightLevel == 0) {
 						leb.a(position);
 					} else if (leb.a(SectionPosition.a(position)) != null) {
-						leb.a(position, finalLightLevel);
-					}
-				} else {
-					LightEngineSky les = (LightEngineSky) lightEngine.a(EnumSkyBlock.SKY);
-					if (finalLightLevel == 0) {
-						les.a(position);
-					} else {
-						les.a(position, finalLightLevel);
+						try {
+							leb.a(position, finalLightLevel);
+						} catch (NullPointerException ignore) {
+							// To prevent problems with the absence of the NibbleArray, even
+							// if leb.a(SectionPosition.a(position)) returns non-null value (corrupted data)
+						}
 					}
 				}
 			}
 		});
 	}
 
-	@Deprecated
 	@Override
-	public void recalculateLight(World world, int x, int y, int z) {
-		recalculateLighting(world, LightType.BLOCK, x, y, z);
-	}
-
-	@SuppressWarnings({"SameParameterValue", "unused"})
-	private void recalculateLighting(World world, final LightType type, int blockX, int blockY, int blockZ) {
+	protected void recalculateLighting(World world, int blockX, int blockY, int blockZ, final LightType type) {
 		WorldServer worldServer = ((CraftWorld) world).getHandle();
 		final LightEngineThreaded lightEngine = worldServer.getChunkProvider().getLightEngine();
 
@@ -105,19 +137,21 @@ public class CraftBukkit_v1_14_R1 extends NmsHandlerBase {
 		executeSync(lightEngine, new Runnable() {
 			@Override
 			public void run() {
-				if (type == LightType.BLOCK) {
-					LightEngineBlock leb = (LightEngineBlock) lightEngine.a(EnumSkyBlock.BLOCK);
-					leb.a(Integer.MAX_VALUE, true, true);
-				} else {
+				if (type == LightType.SKY) {
 					LightEngineSky les = (LightEngineSky) lightEngine.a(EnumSkyBlock.SKY);
 					les.a(Integer.MAX_VALUE, true, true);
+				} else {
+					LightEngineBlock leb = (LightEngineBlock) lightEngine.a(EnumSkyBlock.BLOCK);
+					leb.a(Integer.MAX_VALUE, true, true);
 				}
 			}
 		});
 	}
 
 	@Override
-	public void sendChunkSectionsUpdate(World world, int chunkX, int chunkZ, int sectionsMask, Player player) {
+	public void sendChunkSectionsUpdate(
+			World world, int chunkX, int chunkZ, int sectionsMaskSky, int sectionsMaskBlock, Player player
+	) {
 		Chunk chunk = ((CraftWorld) world).getHandle().getChunkAt(chunkX, chunkZ);
 		// https://wiki.vg/index.php?title=Pre-release_protocol&oldid=14804#Update_Light
 		// https://github.com/flori-schwa/VarLight/blob/b9349499f9c9fb995c320f95eae9698dd85aad5c/v1_14_R1/src/me/florian/varlight/nms/v1_14_R1/NmsAdapter_1_14_R1.java#L451
@@ -126,7 +160,8 @@ public class CraftBukkit_v1_14_R1 extends NmsHandlerBase {
 		// 18 bits, with the lowest bit corresponding to chunk section -1 (in the void,
 		// y=-16 to y=-1) and the highest bit for chunk section 16 (above the world,
 		// y=256 to y=271).
-		PacketPlayOutLightUpdate packet = new PacketPlayOutLightUpdate(chunk.getPos(), chunk.e(), 0, sectionsMask);
+		PacketPlayOutLightUpdate packet = new PacketPlayOutLightUpdate(
+				chunk.getPos(), chunk.e(), sectionsMaskSky, sectionsMaskBlock);
 		((CraftPlayer) player).getHandle().playerConnection.sendPacket(packet);
 	}
 
@@ -148,16 +183,6 @@ public class CraftBukkit_v1_14_R1 extends NmsHandlerBase {
 	@SuppressWarnings({"StatementWithEmptyBody", "unchecked"})
 	private void executeSync(LightEngineThreaded lightEngine, Runnable task) {
 		try {
-			if (!reflectionInited) {
-				threadedMailbox_DoLoopStep = ThreadedMailbox.class.getDeclaredMethod("f");
-				threadedMailbox_DoLoopStep.setAccessible(true);
-				threadedMailbox_State = ThreadedMailbox.class.getDeclaredField("c");
-				threadedMailbox_State.setAccessible(true);
-				lightEngine_ThreadedMailbox = LightEngineThreaded.class.getDeclaredField("b");
-				lightEngine_ThreadedMailbox.setAccessible(true);
-				reflectionInited = true;
-			}
-
 			// ##### STEP 1: Pause light engine mailbox to process its tasks. #####
 			ThreadedMailbox<Runnable> threadedMailbox = (ThreadedMailbox<Runnable>) lightEngine_ThreadedMailbox
 					.get(lightEngine);
@@ -200,14 +225,86 @@ public class CraftBukkit_v1_14_R1 extends NmsHandlerBase {
 				// Otherwise, the main server thread may be frozen due to tasks stuck in the queue.
 				threadedMailbox_DoLoopStep.invoke(threadedMailbox);
 			}
-		} catch (IllegalAccessException e) {
-			throw new UnsupportedOperationException("Something went wrong: access denied", e);
-		} catch (NoSuchFieldException e) {
-			throw new UnsupportedOperationException("Something went wrong: no such field", e);
-		} catch (NoSuchMethodException e) {
-			throw new UnsupportedOperationException("Something went wrong: no such method", e);
 		} catch (InvocationTargetException e) {
-			throw new UnsupportedOperationException("Something went wrong: invocation target", e);
+			throw toRuntimeException(e.getCause());
+		} catch (IllegalAccessException e) {
+			throw toRuntimeException(e);
 		}
+	}
+
+	private void lightEngineLayer_a(LightEngineLayer les, BlockPosition var0, int var1) {
+		try {
+			LightEngineStorage ls = (LightEngineStorage) lightEngineLayer_c.get(les);
+			lightEngineStorage_c.invoke(ls);
+			lightEngineGraph_a.invoke(les, 9223372036854775807L, var0.asLong(), 15 - var1, true);
+		} catch (InvocationTargetException e) {
+			throw toRuntimeException(e.getCause());
+		} catch (IllegalAccessException e) {
+			throw toRuntimeException(e);
+		}
+	}
+
+	private static RuntimeException toRuntimeException(Throwable e) {
+		if (e instanceof RuntimeException) {
+			return (RuntimeException) e;
+		}
+		Class cls = e.getClass();
+		return new RuntimeException(
+				String.format("(%s) %s", RuntimeException.class.getPackage().equals(cls.getPackage())
+						? cls.getSimpleName() : cls.getName(), e.getMessage()),
+				e);
+	}
+
+	private int getDeltaLight(int x, int dx) {
+		return (((x ^ ((-dx >> 4) & 15)) + 1) & (-(dx & 1)));
+	}
+
+	@Override
+	public List<ChunkInfo> collectChunks(
+			World world, int blockX, int blockY, int blockZ, LightType lightType, int lightLevel
+	) {
+		if (lightType != LightType.SKY || lightLevel < 15) {
+			return super.collectChunks(world, blockX, blockY, blockZ, lightType, lightLevel);
+		}
+		List<ChunkInfo> list = new ArrayList<ChunkInfo>();
+		Collection<Player> players = null;
+		for (int dx = -1; dx <= 1; dx++) {
+			int lightLevelX = lightLevel - getDeltaLight(blockX & 15, dx);
+			if (lightLevelX > 0) {
+				for (int dz = -1; dz <= 1; dz++) {
+					int lightLevelZ = lightLevelX - getDeltaLight(blockZ & 15, dz);
+					if (lightLevelZ > 0) {
+						if (lightLevelZ > getDeltaLight(blockY & 15, 1)) {
+							int sectionY = (blockY >> 4) + 1;
+							if (isValidSectionY(sectionY)) {
+								int chunkX = blockX >> 4;
+								int chunkZ = blockZ >> 4;
+								ChunkInfo cCoord = new ChunkInfo(
+										world,
+										chunkX + dx,
+										sectionY << 4,
+										chunkZ + dz,
+										players != null ? players : (players = world.getPlayers()));
+								list.add(cCoord);
+							}
+						}
+						for (int sectionY = blockY >> 4; sectionY >= -1; sectionY--) {
+							if (isValidSectionY(sectionY)) {
+								int chunkX = blockX >> 4;
+								int chunkZ = blockZ >> 4;
+								ChunkInfo cCoord = new ChunkInfo(
+										world,
+										chunkX + dx,
+										sectionY << 4,
+										chunkZ + dz,
+										players != null ? players : (players = world.getPlayers()));
+								list.add(cCoord);
+							}
+						}
+					}
+				}
+			}
+		}
+		return list;
 	}
 }

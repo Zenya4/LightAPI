@@ -27,6 +27,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import ru.beykerykt.lightapi.LightType;
 import ru.beykerykt.lightapi.chunks.ChunkInfo;
 
 import java.util.ArrayList;
@@ -70,13 +71,30 @@ public abstract class NmsHandlerBase implements INMSHandler {
 		return result;
 	}
 
-	private int getDeltaLight(int x, int dx) {
-		return (((x ^ ((-dx >> 4) & 15)) + 1) & (-(dx & 1)));
+	@Deprecated
+	@Override
+	public void createLight(World world, int x, int y, int z, int light) {
+		createLight(world, x, y, z, LightType.BLOCK, light);
+	}
+
+	@Deprecated
+	@Override
+	public void deleteLight(World world, int x, int y, int z) {
+		deleteLight(world, x, y, z, LightType.BLOCK);
 	}
 
 	@Override
-	public List<ChunkInfo> collectChunks(World world, int blockX, int blockY, int blockZ, int lightLevel) {
+	public List<ChunkInfo> collectChunks(World world, int blockX, int blockY, int blockZ, int lightLevel
+	) {
+		return collectChunks(world, blockX, blockY, blockZ, LightType.BLOCK, lightLevel);
+	}
+
+	@Override
+	public List<ChunkInfo> collectChunks(
+			World world, int blockX, int blockY, int blockZ, LightType lightType, int lightLevel
+	) {
 		List<ChunkInfo> list = new ArrayList<ChunkInfo>();
+		Collection<Player> players = null;
 		if (lightLevel > 0) {
 			for (int dx = -1; dx <= 1; dx++) {
 				int lightLevelX = lightLevel - getDeltaLight(blockX & 15, dx);
@@ -85,18 +103,17 @@ public abstract class NmsHandlerBase implements INMSHandler {
 						int lightLevelZ = lightLevelX - getDeltaLight(blockZ & 15, dz);
 						if (lightLevelZ > 0) {
 							for (int dy = -1; dy <= 1; dy++) {
-								int lightLevelY = lightLevelZ - getDeltaLight(blockY & 15, dy);
-								if (lightLevelY > 0) {
-									int sectionY = blockY >> 4;
+								if (lightLevelZ > getDeltaLight(blockY & 15, dy)) {
+									int sectionY = (blockY >> 4) + dy;
 									if (isValidSectionY(sectionY)) {
 										int chunkX = blockX >> 4;
 										int chunkZ = blockZ >> 4;
 										ChunkInfo cCoord = new ChunkInfo(
 												world,
 												chunkX + dx,
-												((sectionY + dy) << 4) + 15,
+												sectionY << 4,
 												chunkZ + dz,
-												world.getPlayers());
+												players != null ? players : (players = world.getPlayers()));
 										list.add(cCoord);
 									}
 								}
@@ -109,58 +126,81 @@ public abstract class NmsHandlerBase implements INMSHandler {
 		return list;
 	}
 
+	private int getDeltaLight(int x, int dx) {
+		return (((x ^ ((-dx >> 4) & 15)) + 1) & (-(dx & 1)));
+	}
+
+	@Deprecated
 	@Override
 	public void sendChunkSectionsUpdate(
 			World world, int chunkX, int chunkZ, int sectionsMask, Collection<? extends Player> players
 	) {
+		sendChunkSectionsUpdate(world, chunkX, chunkZ, 0, sectionsMask, players);
+	}
+
+	@Override
+	public void sendChunkSectionsUpdate(
+			World world, int chunkX, int chunkZ,
+			int sectionsMaskSky, int sectionsMaskBlock, Collection<? extends Player> players
+	) {
 		for (Player player : players) {
-			sendChunkSectionsUpdate(world, chunkX, chunkZ, sectionsMask, player);
+			sendChunkSectionsUpdate(world, chunkX, chunkZ, sectionsMaskSky, sectionsMaskBlock, player);
 		}
 	}
 
-	protected void recalculateLighting(World world, int x, int y, int z) {
-		throw new UnsupportedOperationException("recalculateLighting not implemented");
+	@Deprecated
+	@Override
+	public void sendChunkSectionsUpdate(World world, int chunkX, int chunkZ, int sectionsMask, Player player) {
+		sendChunkSectionsUpdate(world, chunkX, chunkZ, 0, sectionsMask, player);
 	}
 
-	protected void recalculateNeighbour(World world, int x, int y, int z) {
-		recalculateLighting(world, x - 1, y, z);
-		recalculateLighting(world, x + 1, y, z);
-		recalculateLighting(world, x, y - 1, z);
-		recalculateLighting(world, x, y + 1, z);
-		recalculateLighting(world, x, y, z - 1);
-		recalculateLighting(world, x, y, z + 1);
+	@Deprecated
+	@Override
+	public void recalculateLight(World world, int x, int y, int z) {
+		recalculateLighting(world, x, y, z, LightType.BLOCK);
+	}
+
+	protected abstract void recalculateLighting(World world, int x, int y, int z, LightType lightType);
+
+	protected void recalculateNeighbours(World world, int x, int y, int z, LightType lightType) {
+		recalculateLighting(world, x - 1, y, z, lightType);
+		recalculateLighting(world, x + 1, y, z, lightType);
+		recalculateLighting(world, x, y - 1, z, lightType);
+		recalculateLighting(world, x, y + 1, z, lightType);
+		recalculateLighting(world, x, y, z - 1, lightType);
+		recalculateLighting(world, x, y, z + 1, lightType);
 	}
 
 	@Deprecated
 	@Override
 	public List<ChunkInfo> collectChunks(World world, int x, int y, int z) {
-		return collectChunks(world, x, y, z, 15);
+		return collectChunks(world, x, y, z, LightType.BLOCK, 15);
 	}
 
 	@Deprecated
 	@Override
 	public void sendChunkUpdate(World world, int chunkX, int chunkZ, Collection<? extends Player> players) {
-		sendChunkUpdate(world, chunkX, chunkZ, isValidSectionY(-1) ? 0x3ffff : 0xffff, players);
+		sendChunkSectionsUpdate(world, chunkX, chunkZ, 0, isValidSectionY(-1) ? 0x3ffff : 0xffff, players);
 	}
 
 	@Deprecated
 	@Override
 	public void sendChunkUpdate(World world, int chunkX, int chunkZ, Player player) {
-		sendChunkSectionsUpdate(world, chunkX, chunkZ, isValidSectionY(-1) ? 0x3ffff : 0xffff, player);
+		sendChunkSectionsUpdate(world, chunkX, chunkZ, 0, isValidSectionY(-1) ? 0x3ffff : 0xffff, player);
 	}
 
 	@Deprecated
 	@Override
 	public void sendChunkUpdate(World world, int chunkX, int y, int chunkZ, Collection<? extends Player> players) {
 		int mask = getThreeSectionsMask(y);
-		if (mask != 0) sendChunkUpdate(world, chunkX, chunkZ, mask, players);
+		if (mask != 0) sendChunkSectionsUpdate(world, chunkX, chunkZ, 0, mask, players);
 	}
 
 	@Deprecated
 	@Override
 	public void sendChunkUpdate(World world, int chunkX, int y, int chunkZ, Player player) {
 		int mask = getThreeSectionsMask(y);
-		if (mask != 0) sendChunkSectionsUpdate(world, chunkX, chunkZ, mask, player);
+		if (mask != 0) sendChunkSectionsUpdate(world, chunkX, chunkZ, 0, mask, player);
 	}
 
 	private int getThreeSectionsMask(int y) {

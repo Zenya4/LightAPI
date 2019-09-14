@@ -45,7 +45,7 @@ public class ChunkInfo {
 	public ChunkInfo(World world, int chunkX, int chunk_y_height, int chunkZ, Collection<? extends Player> players) {
 		this.world = world;
 		this.x = chunkX;
-		this.y = chunk_y_height;
+		this.y = chunk_y_height >> 4;
 		this.z = chunkZ;
 		this.receivers = players;
 	}
@@ -58,15 +58,20 @@ public class ChunkInfo {
 		return x;
 	}
 
+	public int getChunkY() {
+		return y;
+	}
+
 	public int getChunkZ() {
 		return z;
 	}
 
+	@Deprecated
 	public int getChunkYHeight() {
-		return y;
+		return y << 4;
 	}
 
-	@SuppressWarnings("unused")
+	@Deprecated
 	public void setChunkYHeight(int y) {
 		this.y = y;
 	}

@@ -234,21 +234,35 @@ public class LightAPI extends JavaPlugin implements Listener {
 		return plugin;
 	}
 
+	@Deprecated
 	@SuppressWarnings("unused")
 	public static boolean createLight(Location location, int lightlevel, boolean async) {
+		return createLight(location, LightType.BLOCK, lightlevel, async);
+	}
+
+	@SuppressWarnings("WeakerAccess")
+	public static boolean createLight(Location location, LightType lightType, int lightlevel, boolean async) {
 		return createLight(
 				location.getWorld(),
 				location.getBlockX(),
 				location.getBlockY(),
 				location.getBlockZ(),
-				lightlevel, async);
+				lightType,
+				lightlevel,
+				async);
+	}
+
+	@Deprecated
+	public static boolean createLight(
+			World world, int x, final int y, final int z, final int lightlevel, boolean async) {
+		return createLight(world, x, y, z, LightType.BLOCK, lightlevel, async);
 	}
 
 	@SuppressWarnings("WeakerAccess")
 	public static boolean createLight(
-			World world, int x, final int y, final int z, final int lightlevel, boolean async) {
+			World world, int x, final int y, final int z, LightType lightType, final int lightlevel, boolean async) {
 		if (getInstance().isEnabled()) {
-			final SetLightEvent event = new SetLightEvent(world, x, y, z, lightlevel, async);
+			final SetLightEvent event = new SetLightEvent(world, x, y, z, lightType, lightlevel, async);
 			Bukkit.getPluginManager().callEvent(event);
 
 			if (!event.isCancelled()) {
@@ -261,6 +275,7 @@ public class LightAPI extends JavaPlugin implements Listener {
 									event.getX(),
 									event.getY(),
 									event.getZ(),
+									event.getLightType(),
 									event.getLightLevel());
 						}
 					}
@@ -276,20 +291,34 @@ public class LightAPI extends JavaPlugin implements Listener {
 		return false;
 	}
 
+	@Deprecated
 	@SuppressWarnings("unused")
 	public static boolean deleteLight(Location location, boolean async) {
+		return deleteLight(location, LightType.BLOCK, async);
+	}
+
+	@SuppressWarnings("WeakerAccess")
+	public static boolean deleteLight(Location location, LightType lightType, boolean async) {
 		return deleteLight(
 				location.getWorld(),
 				location.getBlockX(),
 				location.getBlockY(),
 				location.getBlockZ(),
+				lightType,
 				async);
 	}
 
-	@SuppressWarnings("WeakerAccess")
+	@Deprecated
 	public static boolean deleteLight(final World world, final int x, final int y, final int z, boolean async) {
+		return deleteLight(world, x, y, z, LightType.BLOCK, async);
+	}
+
+	@SuppressWarnings("WeakerAccess")
+	public static boolean deleteLight(
+			final World world, final int x, final int y, final int z, LightType lightType, boolean async
+	) {
 		if (getInstance().isEnabled()) {
-			final DeleteLightEvent event = new DeleteLightEvent(world, x, y, z, async);
+			final DeleteLightEvent event = new DeleteLightEvent(world, x, y, z, lightType, async);
 			Bukkit.getPluginManager().callEvent(event);
 
 			if (!event.isCancelled()) {
@@ -300,7 +329,8 @@ public class LightAPI extends JavaPlugin implements Listener {
 								event.getWorld(),
 								event.getX(),
 								event.getY(),
-								event.getZ());
+								event.getZ(),
+								event.getLightType());
 					}
 				};
 				if (event.isAsync()) {
@@ -316,33 +346,40 @@ public class LightAPI extends JavaPlugin implements Listener {
 
 	@Deprecated
 	public static List<ChunkInfo> collectChunks(Location location) {
+		return collectChunks(location, LightType.BLOCK, 15);
+	}
+
+	@Deprecated
+	@SuppressWarnings("unused")
+	public static List<ChunkInfo> collectChunks(Location location, int lightLevel) {
+		return collectChunks(location, LightType.BLOCK, lightLevel);
+	}
+
+	@SuppressWarnings("WeakerAccess")
+	public static List<ChunkInfo> collectChunks(Location location, LightType lightType, int lightLevel) {
 		return collectChunks(
 				location.getWorld(),
 				location.getBlockX(),
 				location.getBlockY(),
 				location.getBlockZ(),
-				15);
+				lightType,
+				lightLevel);
 	}
 
 	@Deprecated
 	public static List<ChunkInfo> collectChunks(final World world, final int x, final int y, final int z) {
-		return collectChunks(world, x, y, z, 15);
+		return collectChunks(world, x, y, z, LightType.BLOCK, 15);
 	}
 
-	@SuppressWarnings("unused")
-	public static List<ChunkInfo> collectChunks(Location location, int lightLevel) {
-		return collectChunks(
-				location.getWorld(),
-				location.getBlockX(),
-				location.getBlockY(),
-				location.getBlockZ(),
-				lightLevel);
+	@Deprecated
+	public static List<ChunkInfo> collectChunks(World world, int x, int y, int z, int lightLevel) {
+		return collectChunks(world, x, y, z, LightType.BLOCK, lightLevel);
 	}
 
 	@SuppressWarnings("WeakerAccess")
-	public static List<ChunkInfo> collectChunks(World world, int x, int y, int z, int lightLevel) {
+	public static List<ChunkInfo> collectChunks(World world, int x, int y, int z, LightType lightType, int lightLevel) {
 		if (getInstance().isEnabled()) {
-			return ServerModManager.getNMSHandler().collectChunks(world, x, y, z, lightLevel);
+			return ServerModManager.getNMSHandler().collectChunks(world, x, y, z, lightType, lightLevel);
 		}
 		return new ArrayList<ChunkInfo>();
 	}
@@ -352,18 +389,28 @@ public class LightAPI extends JavaPlugin implements Listener {
 		return updateChunk(info);
 	}
 
-	@SuppressWarnings("WeakerAccess")
+	@Deprecated
 	public static boolean updateChunk(ChunkInfo info) {
-		return updateChunk(info, null);
+		return updateChunk(info, LightType.BLOCK);
 	}
 
 	@SuppressWarnings("WeakerAccess")
+	public static boolean updateChunk(ChunkInfo info, LightType lightType) {
+		return updateChunk(info, lightType, null);
+	}
+
+	@Deprecated
 	public static boolean updateChunk(ChunkInfo info, Collection<? extends Player> players) {
+		return updateChunk(info, LightType.BLOCK, players);
+	}
+
+	@SuppressWarnings("WeakerAccess")
+	public static boolean updateChunk(ChunkInfo info, LightType lightType, Collection<? extends Player> players) {
 		if (getInstance().isEnabled()) {
-			UpdateChunkEvent event = new UpdateChunkEvent(info);
+			UpdateChunkEvent event = new UpdateChunkEvent(info, lightType);
 			Bukkit.getPluginManager().callEvent(event);
 			if (!event.isCancelled()) {
-				machine.addChunkToUpdate(info, players);
+				machine.addChunkToUpdate(info, lightType, players);
 				return true;
 			}
 		}
@@ -405,9 +452,9 @@ public class LightAPI extends JavaPlugin implements Listener {
 	@Deprecated
 	public static boolean updateChunk(World world, int x, int y, int z, Collection<? extends Player> players) {
 		if (getInstance().isEnabled()) {
-			updateChunk(new ChunkInfo(world, x, y - 1, z, players));
+			updateChunk(new ChunkInfo(world, x, y - 16, z, players));
 			updateChunk(new ChunkInfo(world, x, y, z, players));
-			updateChunk(new ChunkInfo(world, x, y + 1, z, players));
+			updateChunk(new ChunkInfo(world, x, y + 16, z, players));
 			return true;
 		}
 		return false;
