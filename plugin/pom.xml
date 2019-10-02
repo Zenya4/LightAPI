@@ -6,7 +6,7 @@
 
     <groupId>ru.beykerykt</groupId>
     <artifactId>LightAPI-fork</artifactId>
-    <version>3.4.0</version>
+    <version>3.4.1</version>
 
     <properties>
         <maven.compiler.source>1.6</maven.compiler.source>

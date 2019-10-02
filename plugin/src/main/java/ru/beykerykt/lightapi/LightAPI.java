@@ -32,7 +32,6 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -63,6 +62,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class LightAPI extends JavaPlugin implements Listener {
 
@@ -74,8 +75,14 @@ public class LightAPI extends JavaPlugin implements Listener {
 
 	private boolean enableUpdater;
 	private String repo = "Qveshn/LightAPI";
+	public static final String sourceCodeUrl = "https://github.com/Qveshn/LightAPI";
+	public static final String author = "Qveshn";
+	public static final String authorUrl = "https://github.com/Qveshn";
+	public static final String contributorsUrl = "https://github.com/Qveshn/LightAPI/graphs/contributors";
 	private int delayUpdate = 40;
 	private boolean viewChangelog;
+	private String messagePrefix;
+	private boolean coloredLog;
 
 	// To synchronize nms create/delete light methods to avoid conflicts in multi-threaded calls. Got a better idea?
 	private static final Object lock = new Object();
@@ -177,23 +184,23 @@ public class LightAPI extends JavaPlugin implements Listener {
 		this.repo = getConfig().getString("updater.repo");
 		this.delayUpdate = getConfig().getInt("updater.update-delay-ticks");
 		this.viewChangelog = getConfig().getBoolean("updater.view-changelog");
+		this.coloredLog = getConfig().getBoolean("colored-log");
+		this.messagePrefix = getConfig().getString("message-prefix");
+		if (messagePrefix == null) messagePrefix = "";
+
 		Debug.setEnable(getConfig().getBoolean("debug"));
 
 		// init nms
 		try {
 			ServerModManager.init();
 		} catch (UnknownNMSVersionException e) {
-			log(Bukkit.getConsoleSender(), ChatColor.RED + "Could not find handler for this Bukkit "
-					+ ChatColor.WHITE + e.getModName()
-					+ ChatColor.RED + " implementation "
-					+ ChatColor.WHITE + e.getNmsVersion()
-					+ ChatColor.RED + " version.");
+			logError("Could not find handler for this Bukkit §f%s§r implementation §f%s§r version.",
+					e.getModName(), e.getNmsVersion());
 			e.printStackTrace();
 			getServer().getPluginManager().disablePlugin(this);
 			return;
 		} catch (UnknownModImplementationException e) {
-			log(Bukkit.getConsoleSender(), ChatColor.RED + "Could not find handler for this Bukkit implementation: "
-					+ ChatColor.WHITE + e.getModName());
+			logError("Could not find handler for this Bukkit implementation: §f%s", e.getModName());
 			e.printStackTrace();
 			getServer().getPluginManager().disablePlugin(this);
 			return;
@@ -226,8 +233,55 @@ public class LightAPI extends JavaPlugin implements Listener {
 		machine.shutdown();
 	}
 
-	public void log(CommandSender sender, String message) {
-		sender.sendMessage(ChatColor.AQUA + "<LightAPI>: " + ChatColor.WHITE + message);
+	public void logInfo(String message, Object... args) {
+		log(Level.INFO, message, args);
+	}
+
+	private void logError(String message, Object... args) {
+		log(Level.SEVERE, message, args);
+	}
+
+	private void log(Level level, String message, Object... args) {
+		if (args != null && args.length > 0) {
+			message = String.format(message, args);
+		}
+		Logger logger = getLogger();
+		if (!coloredLog) {
+			logger.log(level, removeFormat(message));
+		} else if (logger.isLoggable(level)) {
+			Bukkit.getConsoleSender().sendMessage(String.format(
+					"§b[%s] %s",
+					getDescription().getName(),
+					adjustResetFormat("§r" + message, level == Level.SEVERE ? "§c" : "§f")
+			));
+		}
+	}
+
+	private String removeFormat(String message) {
+		return message.replaceAll("§[0-9a-fk-or]", "");
+	}
+
+	private String adjustResetFormat(String message, String append) {
+		return message.replaceAll("§r", "§r" + append);
+	}
+
+	public void sendMessage(CommandSender sender, String message, Object... args) {
+		for (String s : (args != null && args.length > 0 ? String.format(message, args) : message).split("\n")) {
+			sender.sendMessage(String.format("%s%s", messagePrefix(), s));
+		}
+	}
+
+	public String messagePrefix() {
+		return messagePrefix;
+	}
+
+	public static String join(String delimeter, List<String> args) {
+		StringBuilder sb = new StringBuilder();
+		for (String arg : args) {
+			if (sb.length() > 0) sb.append(delimeter);
+			sb.append(arg);
+		}
+		return sb.toString();
 	}
 
 	public static LightAPI getInstance() {
@@ -484,7 +538,8 @@ public class LightAPI extends JavaPlugin implements Listener {
 	private void generateConfig(File file) {
 		FileConfiguration fc = getConfig();
 		if (!file.exists()) {
-			fc.options().header("LightAPI v" + getDescription().getVersion() + " Configuration" + "\nby BeYkeRYkt");
+			fc.options().header("LightAPI-fork v" + getDescription().getVersion() + " Configuration"
+					+ "\nby " + join(", ", getDescription().getAuthors()));
 			fc.set("version", configVer);
 			fc.set("update-delay-ticks", 2);
 			fc.set("max-iterations-per-tick", 400);
@@ -493,6 +548,8 @@ public class LightAPI extends JavaPlugin implements Listener {
 			fc.set("updater.update-delay-ticks", 40);
 			fc.set("updater.view-changelog", false);
 			fc.set("debug", false);
+			fc.set("colored-log", true);
+			fc.set("message-prefix", "");
 			saveConfig();
 		}
 	}
@@ -536,31 +593,15 @@ public class LightAPI extends JavaPlugin implements Listener {
 			public void run() {
 				Version version = Version.parse(getDescription().getVersion());
 				try {
-					Updater updater = new Updater(version, repo, false);
+					final Updater updater = new Updater(version, repo, false);
+					final Response response = updater.getResult();
+					Bukkit.getScheduler().runTask(plugin, new Runnable() {
 
-					Response response = updater.getResult();
-					if (response == Response.SUCCESS) {
-						log(sender, ChatColor.WHITE + "New update is available: "
-								+ ChatColor.YELLOW + updater.getLatestVersion()
-								+ ChatColor.WHITE + "!");
-						UpdateType update = UpdateType.compareVersion(updater.getVersion().toString());
-						log(sender, ChatColor.WHITE + "Repository: " + repo);
-						log(sender, ChatColor.WHITE + "Update type: " + update.getName());
-						if (update == UpdateType.MAJOR) {
-							log(sender, ChatColor.RED + "WARNING ! A MAJOR UPDATE! Not updating plugins may"
-									+ " produce errors after starting the server! Notify developers about update.");
+						@Override
+						public void run() {
+							printUpdateInfo(sender, updater, response);
 						}
-						if (viewChangelog) {
-							log(sender, ChatColor.WHITE + "Changes: ");
-							sender.sendMessage(updater.getChanges());// for normal view
-						}
-					} else if (response == Response.REPO_NOT_FOUND) {
-						log(sender, ChatColor.RED + "Repo not found! Check that your repo exists!");
-					} else if (response == Response.REPO_NO_RELEASES) {
-						log(sender, ChatColor.RED + "Releases not found! Check your repo!");
-					} else if (response == Response.NO_UPDATE) {
-						log(sender, ChatColor.GREEN + "You are running the latest version!");
-					}
+					});
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -572,65 +613,69 @@ public class LightAPI extends JavaPlugin implements Listener {
 	@Override
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 		if (command.getName().equalsIgnoreCase("lightapi")) {
-			if (sender instanceof Player) {
-				Player player = (Player) sender;
-				if (args.length == 0) {
-					if (BungeeChatHelperClass.hasBungeeChatAPI()) {
-						BungeeChatHelperClass.sendMessageAboutPlugin(player, this);
+			if (args.length == 0) {
+				printDescription(sender);
+			} else {
+				if (args[0].equalsIgnoreCase("update")) {
+					if (sender.hasPermission("lightapi.updater") || sender.isOp()) {
+						runUpdater(sender, 2);
 					} else {
-						player.sendMessage(ChatColor.AQUA + " ------- <LightAPI "
-								+ ChatColor.WHITE + getDescription().getVersion() + "> ------- ");
-						player.sendMessage(ChatColor.AQUA + " Current version: "
-								+ ChatColor.WHITE + getDescription().getVersion());
-						player.sendMessage(ChatColor.AQUA + " Server name: "
-								+ ChatColor.WHITE + getServer().getName());
-						player.sendMessage(ChatColor.AQUA + " Server version: "
-								+ ChatColor.WHITE + getServer().getVersion());
-						player.sendMessage(ChatColor.AQUA + " Source code: "
-								+ ChatColor.WHITE + "http://github.com/BeYkeRYkt/LightAPI/");
-						player.sendMessage(ChatColor.AQUA + " Developer: " + ChatColor.WHITE + "BeYkeRYkt");
-						player.sendMessage("");
-						player.sendMessage(ChatColor.WHITE + " Licensed under: " + ChatColor.AQUA + "MIT License");
+						sendMessage(sender, "§cYou don't have permission!");
 					}
 				} else {
-					if (args[0].equalsIgnoreCase("update")) {
-						if (player.hasPermission("lightapi.updater") || player.isOp()) {
-							runUpdater(player, 2);
-						} else {
-							log(player, ChatColor.RED + "You don't have permission!");
-						}
-					} else {
-						log(player,
-								ChatColor.RED + "Hmm... This command does not exist. Are you sure write correctly?");
-					}
-				}
-			} else if (sender instanceof ConsoleCommandSender) {
-				ConsoleCommandSender console = (ConsoleCommandSender) sender;
-				if (args.length == 0) {
-					console.sendMessage(ChatColor.AQUA + " ------- <LightAPI "
-							+ ChatColor.WHITE + getDescription().getVersion() + "> ------- ");
-					console.sendMessage(ChatColor.AQUA + " Current version: "
-							+ ChatColor.WHITE + getDescription().getVersion());
-					console.sendMessage(ChatColor.AQUA + " Server name: "
-							+ ChatColor.WHITE + getServer().getName());
-					console.sendMessage(ChatColor.AQUA + " Server version: "
-							+ ChatColor.WHITE + getServer().getVersion());
-					console.sendMessage(ChatColor.AQUA + " Source code: "
-							+ ChatColor.WHITE + "http://github.com/BeYkeRYkt/LightAPI/");
-					console.sendMessage(ChatColor.AQUA + " Developer: "
-							+ ChatColor.WHITE + "BeYkeRYkt");
-					console.sendMessage("");
-					console.sendMessage(ChatColor.WHITE + " Licensed under: " + ChatColor.AQUA + "MIT License");
-				} else {
-					if (args[0].equalsIgnoreCase("update")) {
-						runUpdater(console, 2);
-					} else {
-						log(console,
-								ChatColor.RED + "Hmm... This command does not exist. Are you sure write correctly?");
-					}
+					sendMessage(sender, "§cHmm... This command does not exist. Are you sure write correctly?");
 				}
 			}
 		}
 		return true;
+	}
+
+	private void printDescription(CommandSender sender) {
+		if (sender instanceof Player && BungeeChatHelperClass.hasBungeeChatAPI()) {
+			BungeeChatHelperClass.sendMessageAboutPlugin((Player) sender, this);
+		} else {
+			printTitle(sender);
+			sendMessage(sender, "§bDevelopers: §f%s", LightAPI.join("§7, §f", getDescription().getAuthors()));
+			sendMessage(sender, "§bSource code: §f%s", sourceCodeUrl);
+			sendMessage(sender, "§bLicensed under: §fMIT License");
+			printServerInfo(sender);
+		}
+	}
+
+	private void printTitle(CommandSender sender) {
+		if (sender instanceof Player && BungeeChatHelperClass.hasBungeeChatAPI()) {
+			BungeeChatHelperClass.sendMessageTitle((Player) sender, this);
+		} else {
+			sendMessage(sender, "§b-------< §eLightAPI-fork §f%s §b>-------", getDescription().getVersion());
+		}
+	}
+
+	public void printServerInfo(CommandSender sender) {
+		sendMessage(sender, "§bMinecraft server: §f%s §f%s", getServer().getName(), getServer().getVersion());
+	}
+
+	private void printUpdateInfo(CommandSender sender, Updater updater, Response response) {
+		printTitle(sender);
+		if (response == Response.SUCCESS) {
+			sendMessage(sender, "§fNew update is available: §e" + updater.getLatestVersion() + "§f!");
+			UpdateType update = UpdateType.compareVersion(updater.getVersion().toString());
+			sendMessage(sender, "§fRepository: " + repo);
+			sendMessage(sender, "§fUpdate type: " + update.getName());
+			if (update == UpdateType.MAJOR) {
+				sendMessage(sender, "§cWARNING ! A MAJOR UPDATE! Not updating plugins may"
+						+ " produce errors after starting the server! Notify developers about update.");
+			}
+			if (viewChangelog) {
+				sendMessage(sender, "§fChanges: ");
+				String changes = updater.getChanges();
+				sendMessage(sender, "§a" + (changes == null ? "" : changes.replaceAll("\n", "\n§a")));
+			}
+		} else if (response == Response.REPO_NOT_FOUND) {
+			sendMessage(sender, "§cRepo not found! Check that your repo exists!");
+		} else if (response == Response.REPO_NO_RELEASES) {
+			sendMessage(sender, "§cReleases not found! Check your repo!");
+		} else if (response == Response.NO_UPDATE) {
+			sendMessage(sender, "§aYou are running the latest version!");
+		}
 	}
 }

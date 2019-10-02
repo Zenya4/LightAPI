@@ -2,6 +2,7 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2017 Vladimir Mikhailov <beykerykt@gmail.com>
+ * Copyright (c) 2019 Qveshn
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -55,7 +56,7 @@ public class ServerModManager {
 				// Check if we have a NMSHandler class at that location.
 				if (INMSHandler.class.isAssignableFrom(clazz)) {
 					handler = clazz.getConstructor().newInstance();
-					LightAPI.getInstance().log(Bukkit.getConsoleSender(), "Loading handler for " + impl.getModName() + " " + Bukkit.getVersion());
+					LightAPI.getInstance().logInfo("Loading handler for %s %s", impl.getModName(), Bukkit.getVersion());
 				}
 			} else {
 				throw new UnknownNMSVersionException(modName, folder_version);

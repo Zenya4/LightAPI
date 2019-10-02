@@ -2,6 +2,7 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2016 Vladimir Mikhailov <beykerykt@gmail.com>
+ * Copyright (c) 2019 Qveshn
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,11 +24,11 @@
  */
 package ru.beykerykt.lightapi.utils;
 
+import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
-import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import ru.beykerykt.lightapi.LightAPI;
 
@@ -45,46 +46,68 @@ public class BungeeChatHelperClass {
 		return false;
 	}
 
-	public static void sendMessageAboutPlugin(Player player, LightAPI plugin) {
-		player.sendMessage(ChatColor.AQUA + " ------- <LightAPI " + ChatColor.WHITE + plugin.getDescription().getVersion() + "> ------- ");
-
-		TextComponent version = new TextComponent(ChatColor.AQUA + " Current version: ");
-		TextComponent update = new TextComponent(ChatColor.WHITE + plugin.getDescription().getVersion());
-		update.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/lightapi update"));
-		update.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("Click here for check update").create()));
-		version.addExtra(update);
-		player.spigot().sendMessage(version);
-
-		player.sendMessage(ChatColor.AQUA + " Server name: " + ChatColor.WHITE + plugin.getServer().getName());
-		player.sendMessage(ChatColor.AQUA + " Server version: " + ChatColor.WHITE + plugin.getServer().getVersion());
-
-		TextComponent text = new TextComponent(" | ");
-		TextComponent sourcecode = new TextComponent(ChatColor.AQUA + "Source code");
-		sourcecode.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, "http://github.com/BeYkeRYkt/LightAPI/"));
-		sourcecode.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("Goto the GitHub!").create()));
-		text.addExtra(sourcecode);
-		text.addExtra(new TextComponent(ChatColor.WHITE + " | "));
-
-		TextComponent developer = new TextComponent(ChatColor.AQUA + "Developer");
-		developer.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, "http://github.com/BeYkeRYkt/"));
-		developer.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("BeYkeRYkt").create()));
-		text.addExtra(developer);
-		text.addExtra(new TextComponent(ChatColor.WHITE + " | "));
-
-		TextComponent contributors = new TextComponent(ChatColor.AQUA + "Contributors");
-		contributors.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://github.com/BeYkeRYkt/LightAPI/graphs/contributors"));
-		contributors.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("ALIENS!!").create()));
-		text.addExtra(contributors);
-		text.addExtra(new TextComponent(ChatColor.WHITE + " | "));
-
-		player.spigot().sendMessage(text);
-
-		TextComponent licensed = new TextComponent(" Licensed under ");
-		TextComponent MIT = new TextComponent(ChatColor.AQUA + "MIT License");
-		MIT.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://opensource.org/licenses/MIT/"));
-		MIT.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("Goto for information about license!").create()));
-		licensed.addExtra(MIT);
-		player.spigot().sendMessage(licensed);
+	public static void sendMessageTitle(Player player, LightAPI plugin) {
+		TextComponent title = new TextComponent("§b-------< §eLightAPI-fork ");
+		TextComponent version = new TextComponent("§f" + plugin.getDescription().getVersion());
+		version.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/lightapi update"));
+		version.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+				new ComponentBuilder("Click here for check update\n§7/lightapi update").create()));
+		title.addExtra(version);
+		title.addExtra(new TextComponent(" §b>-------"));
+		sendMessage(player, title, plugin);
 	}
 
+	public static void sendMessageAboutPlugin(Player player, LightAPI plugin) {
+		sendMessageTitle(player, plugin);
+
+		plugin.sendMessage(player, "§bDevelopers: §f%s", LightAPI.join("§7, §f", plugin.getDescription().getAuthors()));
+		plugin.sendMessage(player, "§bSource code: §f%s", LightAPI.sourceCodeUrl);
+		TextComponent licensed = new TextComponent("§bLicensed under ");
+		TextComponent MIT = new TextComponent("§fMIT License");
+		MIT.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://opensource.org/licenses/MIT/"));
+		MIT.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+				new ComponentBuilder("Goto for information about license!").create()));
+		licensed.addExtra(MIT);
+		sendMessage(player, licensed, plugin);
+
+		plugin.printServerInfo(player);
+
+		TextComponent text = new TextComponent("§e§l<");
+		TextComponent sourcecode = new TextComponent("§6Source code");
+		sourcecode.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, LightAPI.sourceCodeUrl));
+		sourcecode.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+				new ComponentBuilder("Goto the GitHub!").create()));
+		text.addExtra(sourcecode);
+		text.addExtra(new TextComponent("§e§l> <"));
+
+		TextComponent developer = new TextComponent("§6Developer");
+		developer.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, LightAPI.authorUrl));
+		developer.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+				new ComponentBuilder("§f" + LightAPI.author).create()));
+		text.addExtra(developer);
+		text.addExtra(new TextComponent("§e§l> <"));
+
+		TextComponent contributors = new TextComponent("§6Contributors");
+		contributors.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, LightAPI.contributorsUrl));
+		contributors.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+				new ComponentBuilder("ALIENS!!").create()));
+		text.addExtra(contributors);
+		text.addExtra(new TextComponent("§e§l> <"));
+
+		TextComponent checkUpdate = new TextComponent("§6Check update");
+		checkUpdate.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/lightapi update"));
+		checkUpdate.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+				new ComponentBuilder("Click here for check update\n§7/lightapi update").create()));
+		text.addExtra(checkUpdate);
+		text.addExtra(new TextComponent("§e§l>"));
+		sendMessage(player, text, plugin);
+
+
+	}
+
+	private static void sendMessage(Player player, BaseComponent component, LightAPI plugin) {
+		BaseComponent prefix = new TextComponent(plugin.messagePrefix());
+		prefix.addExtra(component);
+		player.spigot().sendMessage(prefix);
+	}
 }

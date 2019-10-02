@@ -3,6 +3,7 @@ package ru.beykerykt.lightapi.utils;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -684,7 +685,7 @@ public class Metrics_bStats {
 			}
 			for (Map.Entry<String, Integer> entry : map.entrySet()) {
 				JsonArray categoryValues = new JsonArray();
-				categoryValues.add(entry.getValue());
+				categoryValues.add(new JsonPrimitive(entry.getValue()));
 				values.add(entry.getKey(), categoryValues);
 			}
 			data.add("values", values);
@@ -728,7 +729,7 @@ public class Metrics_bStats {
 				allSkipped = false;
 				JsonArray categoryValues = new JsonArray();
 				for (int categoryValue : entry.getValue()) {
-					categoryValues.add(categoryValue);
+					categoryValues.add(new JsonPrimitive(categoryValue));
 				}
 				values.add(entry.getKey(), categoryValues);
 			}
