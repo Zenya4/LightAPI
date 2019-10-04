@@ -155,6 +155,10 @@ public class LightAPI extends JavaPlugin implements Listener {
 		akarin.getVersions().put("v1_13_R2", CraftBukkit_v1_13_R2.class);
 		akarin.getVersions().put("v1_14_R1", CraftBukkit_v1_14_R1.class);
 		ServerModManager.registerServerMod(akarin);
+
+		ServerModInfo purpur = new ServerModInfo("Purpur");
+		purpur.getVersions().put("v1_14_R1", CraftBukkit_v1_14_R1.class);
+		ServerModManager.registerServerMod(purpur);
 	}
 
 	@Override
