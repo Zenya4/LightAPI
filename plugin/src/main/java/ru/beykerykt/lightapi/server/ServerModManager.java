@@ -25,12 +25,8 @@
 package ru.beykerykt.lightapi.server;
 
 import org.bukkit.Bukkit;
-import ru.beykerykt.lightapi.LightAPI;
-import ru.beykerykt.lightapi.server.exceptions.UnknownModImplementationException;
-import ru.beykerykt.lightapi.server.exceptions.UnknownNMSVersionException;
 import ru.beykerykt.lightapi.server.nms.INMSHandler;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -39,31 +35,13 @@ public class ServerModManager {
 	private static Map<String, ServerModInfo> supportImpl = new ConcurrentHashMap<String, ServerModInfo>();
 	private static INMSHandler handler;
 
-	public static void init() throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, UnknownNMSVersionException, UnknownModImplementationException {
-		shutdown();
-
-		// Init handler...
-		String modName = Bukkit.getVersion().split("-")[1];
-		if (!supportImpl.containsKey(modName)) {
-			modName = Bukkit.getName();
-		}
+	public static Class<? extends INMSHandler> findImplementaion(String modName) {
 		ServerModInfo impl = supportImpl.get(modName);
-		if (impl != null) {
-			// try {
-			String folder_version = Bukkit.getServer().getClass().getPackage().getName().replace(".", ",").split(",")[3];
-			if (impl.getVersions().containsKey(folder_version)) {
-				final Class<? extends INMSHandler> clazz = impl.getVersions().get(folder_version);
-				// Check if we have a NMSHandler class at that location.
-				if (INMSHandler.class.isAssignableFrom(clazz)) {
-					handler = clazz.getConstructor().newInstance();
-					LightAPI.getInstance().logInfo("Loading handler for %s %s", impl.getModName(), Bukkit.getVersion());
-				}
-			} else {
-				throw new UnknownNMSVersionException(modName, folder_version);
-			}
-		} else {
-			throw new UnknownModImplementationException(modName);
-		}
+		return impl != null?impl.getVersions().get(getServerVersion()):null;
+	}
+
+	public static void initImplementaion(Class<? extends INMSHandler> clazz) throws Exception {
+		ServerModManager.handler = clazz.getConstructor().newInstance();
 	}
 
 	public static void shutdown() {
@@ -94,5 +72,17 @@ public class ServerModManager {
 
 	public static INMSHandler getNMSHandler() {
 		return handler;
+	}
+
+	public static String getServerVersion() {
+		return Bukkit.getServer().getClass().getPackage().getName().replace(".", ",").split(",")[3];
+	}
+
+	public static String getServerName() {
+		return Bukkit.getVersion().split("-")[1];
+	}
+
+	public static String getBukkitName() {
+		return Bukkit.getName();
 	}
 }

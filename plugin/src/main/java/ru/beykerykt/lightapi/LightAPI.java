@@ -45,8 +45,7 @@ import ru.beykerykt.lightapi.events.UpdateChunkEvent;
 import ru.beykerykt.lightapi.request.RequestSteamMachine;
 import ru.beykerykt.lightapi.server.ServerModInfo;
 import ru.beykerykt.lightapi.server.ServerModManager;
-import ru.beykerykt.lightapi.server.exceptions.UnknownModImplementationException;
-import ru.beykerykt.lightapi.server.exceptions.UnknownNMSVersionException;
+import ru.beykerykt.lightapi.server.nms.INMSHandler;
 import ru.beykerykt.lightapi.server.nms.craftbukkit.*;
 import ru.beykerykt.lightapi.updater.Response;
 import ru.beykerykt.lightapi.updater.UpdateType;
@@ -60,6 +59,7 @@ import ru.beykerykt.lightapi.utils.Metrics_mcstats;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
@@ -104,6 +104,7 @@ public class LightAPI extends JavaPlugin implements Listener {
 		craftbukkit.getVersions().put("v1_13_R1", CraftBukkit_v1_13_R1.class);
 		craftbukkit.getVersions().put("v1_13_R2", CraftBukkit_v1_13_R2.class);
 		craftbukkit.getVersions().put("v1_14_R1", CraftBukkit_v1_14_R1.class);
+		craftbukkit.getVersions().put("v1_15_R1", CraftBukkit_v1_15_R1.class);
 		ServerModManager.registerServerMod(craftbukkit);
 
 		ServerModInfo spigot = new ServerModInfo("Spigot");
@@ -116,6 +117,7 @@ public class LightAPI extends JavaPlugin implements Listener {
 		spigot.getVersions().put("v1_13_R1", CraftBukkit_v1_13_R1.class);
 		spigot.getVersions().put("v1_13_R2", CraftBukkit_v1_13_R2.class);
 		spigot.getVersions().put("v1_14_R1", CraftBukkit_v1_14_R1.class);
+		spigot.getVersions().put("v1_15_R1", CraftBukkit_v1_15_R1.class);
 		ServerModManager.registerServerMod(spigot);
 
 		ServerModInfo paperspigot = new ServerModInfo("PaperSpigot");
@@ -131,6 +133,7 @@ public class LightAPI extends JavaPlugin implements Listener {
 		paper.getVersions().put("v1_13_R1", CraftBukkit_v1_13_R1.class);
 		paper.getVersions().put("v1_13_R2", CraftBukkit_v1_13_R2.class);
 		paper.getVersions().put("v1_14_R1", CraftBukkit_v1_14_R1.class);
+		paper.getVersions().put("v1_15_R1", CraftBukkit_v1_15_R1.class);
 		ServerModManager.registerServerMod(paper);
 
 		ServerModInfo tacospigot = new ServerModInfo("TacoSpigot");
@@ -143,6 +146,7 @@ public class LightAPI extends JavaPlugin implements Listener {
 		tacospigot.getVersions().put("v1_13_R1", CraftBukkit_v1_13_R1.class);
 		tacospigot.getVersions().put("v1_13_R2", CraftBukkit_v1_13_R2.class);
 		tacospigot.getVersions().put("v1_14_R1", CraftBukkit_v1_14_R1.class);
+		tacospigot.getVersions().put("v1_15_R1", CraftBukkit_v1_15_R1.class);
 		ServerModManager.registerServerMod(tacospigot);
 
 		ServerModInfo akarin = new ServerModInfo("Akarin");
@@ -154,10 +158,12 @@ public class LightAPI extends JavaPlugin implements Listener {
 		akarin.getVersions().put("v1_13_R1", CraftBukkit_v1_13_R1.class);
 		akarin.getVersions().put("v1_13_R2", CraftBukkit_v1_13_R2.class);
 		akarin.getVersions().put("v1_14_R1", CraftBukkit_v1_14_R1.class);
+		akarin.getVersions().put("v1_15_R1", CraftBukkit_v1_15_R1.class);
 		ServerModManager.registerServerMod(akarin);
 
 		ServerModInfo purpur = new ServerModInfo("Purpur");
 		purpur.getVersions().put("v1_14_R1", CraftBukkit_v1_14_R1.class);
+		purpur.getVersions().put("v1_15_R1", CraftBukkit_v1_15_R1.class);
 		ServerModManager.registerServerMod(purpur);
 	}
 
@@ -195,24 +201,40 @@ public class LightAPI extends JavaPlugin implements Listener {
 		Debug.setEnable(getConfig().getBoolean("debug"));
 
 		// init nms
-		try {
-			ServerModManager.init();
-		} catch (UnknownNMSVersionException e) {
-			logError("Could not find handler for this Bukkit §f%s§r implementation §f%s§r version.",
-					e.getModName(), e.getNmsVersion());
-			e.printStackTrace();
-			getServer().getPluginManager().disablePlugin(this);
-			return;
-		} catch (UnknownModImplementationException e) {
-			logError("Could not find handler for this Bukkit implementation: §f%s", e.getModName());
-			e.printStackTrace();
-			getServer().getPluginManager().disablePlugin(this);
-			return;
-		} catch (Exception e) {
-			e.printStackTrace();
+		String serverName = ServerModManager.getServerName();
+		String bukkitName = ServerModManager.getBukkitName();
+		String craftBukkit = "CraftBukkit";
+		String modName;
+		Class<? extends INMSHandler> clazz = ServerModManager.findImplementaion(modName = serverName);
+		if (clazz == null && !serverName.equals(bukkitName)) {
+			clazz = ServerModManager.findImplementaion(modName = bukkitName);
+		}
+		if (clazz == null && !Arrays.asList(serverName, bukkitName).contains(craftBukkit)) {
+			logInfo("Could not find §f%s§r implementation. Trying §f%s§r instead", serverName, craftBukkit);
+			clazz = ServerModManager.findImplementaion(modName = craftBukkit);
+		}
+		if (clazz == null) {
+			logError("No implementations was found for §f%s§r server §f%s§r.",
+					serverName, ServerModManager.getServerVersion());
+		} else {
+			try {
+				ServerModManager.initImplementaion(clazz);
+			} catch (Exception e) {
+				logError("Could not initialize §f%s§r implementation for §f%s§r server §f%s§r.",
+						modName, serverName, ServerModManager.getServerVersion());
+				e.printStackTrace();
+			}
+		}
+		if (!ServerModManager.isInitialized()) {
+			logError("Disabling plugin");
 			getServer().getPluginManager().disablePlugin(this);
 			return;
 		}
+
+		logInfo(modName.equals(serverName)
+						? "Loading implementation for §f%2$s§r server §f%3$s§r."
+						: "Loading §f%1$s§r implementation for §f%2$s§r server §f%3$s§r.",
+				modName, serverName, ServerModManager.getServerVersion());
 
 		machine.start(LightAPI.getInstance().getUpdateDelayTicks(), LightAPI.getInstance().getMaxIterationsPerTick());
 		getServer().getPluginManager().registerEvents(this, this);
@@ -237,7 +259,7 @@ public class LightAPI extends JavaPlugin implements Listener {
 		machine.shutdown();
 	}
 
-	public void logInfo(String message, Object... args) {
+	private void logInfo(String message, Object... args) {
 		log(Level.INFO, message, args);
 	}
 
@@ -256,7 +278,7 @@ public class LightAPI extends JavaPlugin implements Listener {
 			Bukkit.getConsoleSender().sendMessage(String.format(
 					"§b[%s] %s",
 					getDescription().getName(),
-					adjustResetFormat("§r" + message, level == Level.SEVERE ? "§c" : "§f")
+					adjustResetFormat("§r" + message, level == Level.SEVERE ? "§c" : "§7")
 			));
 		}
 	}
