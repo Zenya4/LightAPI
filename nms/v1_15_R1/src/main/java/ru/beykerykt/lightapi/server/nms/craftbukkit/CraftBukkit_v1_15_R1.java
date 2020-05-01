@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2016-2017 The ImplexDevOne Project
  * Copyright (c) 2019 Vladimir Mikhailov <beykerykt@gmail.com>
- * Copyright (c) 2019 Qveshn
+ * Copyright (c) 2020 Qveshn
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -96,7 +96,9 @@ public class CraftBukkit_v1_15_R1 extends NmsHandlerBase {
 			@Override
 			public void run() {
 				if (type == LightType.SKY) {
-					LightEngineSky les = (LightEngineSky) lightEngine.a(EnumSkyBlock.SKY);
+					LightEngineLayerEventListener layer = lightEngine.a(EnumSkyBlock.SKY);
+					if (!(layer instanceof LightEngineSky)) return;
+					LightEngineSky les = (LightEngineSky) layer;
 					if (finalLightLevel == 0) {
 						les.a(position);
 					} else if (les.a(SectionPosition.a(position)) != null) {
@@ -108,7 +110,9 @@ public class CraftBukkit_v1_15_R1 extends NmsHandlerBase {
 						}
 					}
 				} else {
-					LightEngineBlock leb = (LightEngineBlock) lightEngine.a(EnumSkyBlock.BLOCK);
+					LightEngineLayerEventListener layer = lightEngine.a(EnumSkyBlock.BLOCK);
+					if (!(layer instanceof LightEngineBlock)) return;
+					LightEngineBlock leb = (LightEngineBlock) layer;
 					if (finalLightLevel == 0) {
 						leb.a(position);
 					} else if (leb.a(SectionPosition.a(position)) != null) {
@@ -306,5 +310,19 @@ public class CraftBukkit_v1_15_R1 extends NmsHandlerBase {
 			}
 		}
 		return list;
+	}
+
+	@Override
+	public boolean isSupported(World world, LightType lightType) {
+		if (!(world instanceof CraftWorld)) {
+			return false;
+		}
+		WorldServer worldServer = ((CraftWorld) world).getHandle();
+		LightEngineThreaded lightEngine = worldServer.getChunkProvider().getLightEngine();
+		if (lightType == LightType.SKY) {
+			return lightEngine.a(EnumSkyBlock.SKY) instanceof LightEngineSky;
+		} else {
+			return lightEngine.a(EnumSkyBlock.BLOCK) instanceof LightEngineBlock;
+		}
 	}
 }

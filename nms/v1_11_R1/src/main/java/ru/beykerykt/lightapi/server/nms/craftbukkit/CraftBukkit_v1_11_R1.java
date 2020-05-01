@@ -2,7 +2,7 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2017 Vladimir Mikhailov <beykerykt@gmail.com>
- * Copyright (c) 2019 Qveshn
+ * Copyright (c) 2020 Qveshn
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -65,5 +65,18 @@ public class CraftBukkit_v1_11_R1 extends NmsHandlerBase {
 		// and the highest bit for chunk section 15 (y=240 to 255).
 		PacketPlayOutMapChunk packet = new PacketPlayOutMapChunk(chunk, sectionsMask);
 		((CraftPlayer) player).getHandle().playerConnection.sendPacket(packet);
+	}
+
+	@Override
+	public boolean isSupported(World world, LightType lightType) {
+		if (!(world instanceof CraftWorld)) {
+			return false;
+		}
+		WorldServer worldServer = ((CraftWorld) world).getHandle();
+		if (lightType == LightType.SKY) {
+			return worldServer.worldProvider.m();
+		} else {
+			return true;
+		}
 	}
 }

@@ -2,7 +2,7 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2017 Vladimir Mikhailov <beykerykt@gmail.com>
- * Copyright (c) 2019 Qveshn
+ * Copyright (c) 2020 Qveshn
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -312,6 +312,11 @@ public class LightAPI extends JavaPlugin implements Listener {
 
 	public static LightAPI getInstance() {
 		return plugin;
+	}
+
+	@SuppressWarnings("unused")
+	public static boolean isSupported(World world, LightType lightType) {
+		return ServerModManager.getNMSHandler().isSupported(world, lightType);
 	}
 
 	@Deprecated
