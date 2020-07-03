@@ -1,6 +1,7 @@
 name: LightAPI
 main: ru.beykerykt.lightapi.LightAPI
 version: ${project.version}
+api-version: '1.13'
 description: Bukkit Library for create invisible light source
 authors: [BeYkeRYkt, Qveshn]
 commands:

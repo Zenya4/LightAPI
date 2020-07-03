@@ -26,5 +26,6 @@
         <module>nms/v1_13_R2</module>
         <module>nms/v1_14_R1</module>
         <module>nms/v1_15_R1</module>
+        <module>nms/v1_16_R1</module>
     </modules>
 </project>
