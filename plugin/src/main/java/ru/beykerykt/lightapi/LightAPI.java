@@ -106,6 +106,7 @@ public class LightAPI extends JavaPlugin implements Listener {
 		craftbukkit.getVersions().put("v1_14_R1", CraftBukkit_v1_14_R1.class);
 		craftbukkit.getVersions().put("v1_15_R1", CraftBukkit_v1_15_R1.class);
 		craftbukkit.getVersions().put("v1_16_R1", CraftBukkit_v1_16_R1.class);
+		craftbukkit.getVersions().put("v1_16_R2", CraftBukkit_v1_16_R2.class);
 		ServerModManager.registerServerMod(craftbukkit);
 
 		ServerModInfo spigot = new ServerModInfo("Spigot");
@@ -120,6 +121,7 @@ public class LightAPI extends JavaPlugin implements Listener {
 		spigot.getVersions().put("v1_14_R1", CraftBukkit_v1_14_R1.class);
 		spigot.getVersions().put("v1_15_R1", CraftBukkit_v1_15_R1.class);
 		spigot.getVersions().put("v1_16_R1", CraftBukkit_v1_16_R1.class);
+		spigot.getVersions().put("v1_16_R2", CraftBukkit_v1_16_R2.class);
 		ServerModManager.registerServerMod(spigot);
 
 		ServerModInfo paperspigot = new ServerModInfo("PaperSpigot");
