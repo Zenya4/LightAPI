@@ -1,7 +1,7 @@
 ![Image](/others/light_api_logo_version_3.png)
 # LightAPI (Fork)
 Library for creating invisible light source.  
-Bukkit plugin for Minecraft server 1.8, 1.9, 1.10, 1.11, 1.12, 1.13, 1.14, 1.15, 1.16.
+Bukkit plugin for Minecraft server 1.8, 1.9, 1.10, 1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17.
 
 - [ SPIGOT RESOURCE ](https://www.spigotmc.org/resources/lightapi-temporary-fork.48247/) ([ original ](https://www.spigotmc.org/resources/lightapi.4510/))
 - [ CONTRIBUTORS ](https://github.com/Qveshn/LightAPI/graphs/contributors) ([ original ](https://github.com/BeYkeRYkt/LightAPI/graphs/contributors))

@@ -26,20 +26,21 @@ package ru.beykerykt.lightapi.chunks;
 import org.bukkit.entity.Player;
 import ru.beykerykt.lightapi.LightType;
 
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashSet;
 
 public class ChunkUpdateInfo {
 
-	private int sectionMaskSky = 0;
-	private int sectionMaskBlock = 0;
+	private BitSet sectionMaskSky = new BitSet();
+	private BitSet sectionMaskBlock = new BitSet();
 	private Collection<Player> players = new HashSet<Player>();
 
-	public void add(LightType lightType, int sectionMask, Collection<? extends Player> players) {
+	public void add(LightType lightType, BitSet sectionMask, Collection<? extends Player> players) {
 		if (lightType == LightType.SKY) {
-			this.sectionMaskSky |= sectionMask;
+			this.sectionMaskSky.or(sectionMask);
 		} else {
-			this.sectionMaskBlock |= sectionMask;
+			this.sectionMaskBlock.or(sectionMask);
 		}
 		add(players);
 	}
@@ -52,11 +53,11 @@ public class ChunkUpdateInfo {
 		return players;
 	}
 
-	public int getSectionMaskSky() {
+	public BitSet getSectionMaskSky() {
 		return sectionMaskSky;
 	}
 
-	public int getSectionMaskBlock() {
+	public BitSet getSectionMaskBlock() {
 		return sectionMaskBlock;
 	}
 }
