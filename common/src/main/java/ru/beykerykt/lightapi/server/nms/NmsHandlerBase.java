@@ -31,6 +31,7 @@ import ru.beykerykt.lightapi.LightType;
 import ru.beykerykt.lightapi.chunks.ChunkInfo;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.List;
 
@@ -40,10 +41,20 @@ public abstract class NmsHandlerBase implements INMSHandler {
 	public boolean isValidSectionY(int sectionY) {
 		return sectionY >= 0 && sectionY < 16;
 	}
+	
+	@Override
+	public boolean isValidSectionY(World world, int sectionY) {
+		return sectionY >= 0 && sectionY < 16;
+	}
 
 	@Override
 	public int asSectionMask(int sectionY) {
 		return 1 << sectionY;
+	}
+	
+	@Override
+	public BitSet asSectionMask(World world, int sectionY) {
+		return BitSet.valueOf(new long[] {asSectionMask(sectionY)});
 	}
 
 	protected int getViewDistance(Player player) {
@@ -105,7 +116,7 @@ public abstract class NmsHandlerBase implements INMSHandler {
 							for (int dy = -1; dy <= 1; dy++) {
 								if (lightLevelZ > getDeltaLight(blockY & 15, dy)) {
 									int sectionY = (blockY >> 4) + dy;
-									if (isValidSectionY(sectionY)) {
+									if (isValidSectionY(world, sectionY)) {
 										int chunkX = blockX >> 4;
 										int chunkZ = blockZ >> 4;
 										ChunkInfo cCoord = new ChunkInfo(
@@ -147,6 +158,24 @@ public abstract class NmsHandlerBase implements INMSHandler {
 			sendChunkSectionsUpdate(world, chunkX, chunkZ, sectionsMaskSky, sectionsMaskBlock, player);
 		}
 	}
+	
+	@Override
+	public void sendChunkSectionsUpdate(
+			World world, int chunkX, int chunkZ,
+			BitSet sectionsMaskSky, BitSet sectionsMaskBlock, Collection<? extends Player> players
+	) {
+		for (Player player : players) {
+			sendChunkSectionsUpdate(world, chunkX, chunkZ, sectionsMaskSky, sectionsMaskBlock, player);
+		}
+	}
+	
+	@Override
+	public void sendChunkSectionsUpdate(
+			World world, int chunkX, int chunkZ,
+			BitSet sectionsMaskSky, BitSet sectionsMaskBlock, Player player
+	) {
+		sendChunkSectionsUpdate(world, chunkX, chunkZ, (int) sectionsMaskSky.toLongArray()[0], (int) sectionsMaskBlock.toLongArray()[0], player);
+	}
 
 	@Deprecated
 	@Override
@@ -180,32 +209,32 @@ public abstract class NmsHandlerBase implements INMSHandler {
 	@Deprecated
 	@Override
 	public void sendChunkUpdate(World world, int chunkX, int chunkZ, Collection<? extends Player> players) {
-		sendChunkSectionsUpdate(world, chunkX, chunkZ, 0, isValidSectionY(-1) ? 0x3ffff : 0xffff, players);
+		sendChunkSectionsUpdate(world, chunkX, chunkZ, 0, isValidSectionY(world, -1) ? 0x3ffff : 0xffff, players);
 	}
 
 	@Deprecated
 	@Override
 	public void sendChunkUpdate(World world, int chunkX, int chunkZ, Player player) {
-		sendChunkSectionsUpdate(world, chunkX, chunkZ, 0, isValidSectionY(-1) ? 0x3ffff : 0xffff, player);
+		sendChunkSectionsUpdate(world, chunkX, chunkZ, 0, isValidSectionY(world, -1) ? 0x3ffff : 0xffff, player);
 	}
 
 	@Deprecated
 	@Override
 	public void sendChunkUpdate(World world, int chunkX, int y, int chunkZ, Collection<? extends Player> players) {
-		int mask = getThreeSectionsMask(y);
+		int mask = getThreeSectionsMask(world, y);
 		if (mask != 0) sendChunkSectionsUpdate(world, chunkX, chunkZ, 0, mask, players);
 	}
 
 	@Deprecated
 	@Override
 	public void sendChunkUpdate(World world, int chunkX, int y, int chunkZ, Player player) {
-		int mask = getThreeSectionsMask(y);
+		int mask = getThreeSectionsMask(world, y);
 		if (mask != 0) sendChunkSectionsUpdate(world, chunkX, chunkZ, 0, mask, player);
 	}
 
-	private int getThreeSectionsMask(int y) {
-		return (isValidSectionY(y) ? asSectionMask(y) : 0)
-				| (isValidSectionY(y - 1) ? asSectionMask(y - 1) : 0)
-				| (isValidSectionY(y + 1) ? asSectionMask(y + 1) : 0);
+	private int getThreeSectionsMask(World world, int y) {
+		return (isValidSectionY(world, y) ? asSectionMask(y) : 0)
+				| (isValidSectionY(world, y - 1) ? asSectionMask(y - 1) : 0)
+				| (isValidSectionY(world, y + 1) ? asSectionMask(y + 1) : 0);
 	}
 }

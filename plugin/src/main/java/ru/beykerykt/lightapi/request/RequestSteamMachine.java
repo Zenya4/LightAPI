@@ -24,6 +24,7 @@
  */
 package ru.beykerykt.lightapi.request;
 
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import ru.beykerykt.lightapi.chunks.ChunkInfo;
 import ru.beykerykt.lightapi.chunks.ChunkLocation;
@@ -80,10 +81,11 @@ public class RequestSteamMachine implements Runnable {
 
 	public void addChunkToUpdate(final ChunkInfo info, final LightType lightType, Collection<? extends Player> receivers) {
 		int SectionY = info.getChunkY();
+		World world = info.getWorld();
 		INMSHandler nmsHandler = ServerModManager.getNMSHandler();
-		if (nmsHandler.isValidSectionY(SectionY)) {
+		if (nmsHandler.isValidSectionY(world, SectionY)) {
 			final ChunkLocation chunk = new ChunkLocation(info.getWorld(), info.getChunkX(), info.getChunkZ());
-			final int sectionYMask = nmsHandler.asSectionMask(SectionY);
+			final BitSet sectionYMask = nmsHandler.asSectionMask(world, SectionY);
 			final Collection<Player> players = new ArrayList<Player>(
 					receivers != null ? receivers : info.getReceivers()
 			);
@@ -123,15 +125,17 @@ public class RequestSteamMachine implements Runnable {
 			for (Map.Entry<ChunkLocation, ChunkUpdateInfo> item : chunksToUpdate.entrySet()) {
 				ChunkLocation chunk = item.getKey();
 				ChunkUpdateInfo chunkUpdateInfo = item.getValue();
-				int sectionMaskSky = chunkUpdateInfo.getSectionMaskSky();
-				int sectionMaskBlock = chunkUpdateInfo.getSectionMaskBlock();
+				BitSet sectionMaskSky = chunkUpdateInfo.getSectionMaskSky();
+				BitSet sectionMaskBlock = chunkUpdateInfo.getSectionMaskBlock();
 				Collection<? extends Player> players = nmsHandler.filterVisiblePlayers(
 						chunk.getWorld(), chunk.getX(), chunk.getZ(), chunkUpdateInfo.getPlayers());
 				nmsHandler.sendChunkSectionsUpdate(chunk.getWorld(), chunk.getX(), chunk.getZ(),
 						sectionMaskSky, sectionMaskBlock, players);
 				if (debug) {
 					totalSends += players.size();
-					totalSections += Integer.bitCount(sectionMaskSky | sectionMaskBlock);
+					BitSet clone = (BitSet) sectionMaskSky.clone();
+					clone.or(sectionMaskBlock);
+					totalSections += clone.cardinality();
 					usedPlayers.addAll(players);
 				}
 			}

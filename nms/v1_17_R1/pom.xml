@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>ru.beykerykt.lightapi.nms</groupId>
-    <artifactId>v1_16_R1</artifactId>
+    <artifactId>v1_17_R1</artifactId>
     <version>3.3.0</version>
 
     <properties>
@@ -19,7 +19,7 @@
         <dependency>
             <groupId>org.bukkit</groupId>
             <artifactId>craftbukkit</artifactId>
-            <version>1.16.1-R0.1-SNAPSHOT</version>
+            <version>1.17-R0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>ru.beykerykt.lightapi</groupId>
