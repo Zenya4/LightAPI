@@ -140,6 +140,9 @@ public class LightAPI extends JavaPlugin implements Listener {
 		paper.getVersions().put("v1_13_R2", CraftBukkit_v1_13_R2.class);
 		paper.getVersions().put("v1_14_R1", CraftBukkit_v1_14_R1.class);
 		paper.getVersions().put("v1_15_R1", CraftBukkit_v1_15_R1.class);
+		paper.getVersions().put("v1_16_R1", CraftBukkit_v1_16_R1.class);
+		paper.getVersions().put("v1_16_R2", CraftBukkit_v1_16_R2.class);
+		paper.getVersions().put("v1_16_R3", CraftBukkit_v1_16_R3.class);
 		ServerModManager.registerServerMod(paper);
 
 		ServerModInfo tacospigot = new ServerModInfo("TacoSpigot");
@@ -170,6 +173,9 @@ public class LightAPI extends JavaPlugin implements Listener {
 		ServerModInfo purpur = new ServerModInfo("Purpur");
 		purpur.getVersions().put("v1_14_R1", CraftBukkit_v1_14_R1.class);
 		purpur.getVersions().put("v1_15_R1", CraftBukkit_v1_15_R1.class);
+		purpur.getVersions().put("v1_16_R1", CraftBukkit_v1_16_R1.class);
+		purpur.getVersions().put("v1_16_R2", CraftBukkit_v1_16_R2.class);
+		purpur.getVersions().put("v1_16_R3", CraftBukkit_v1_16_R3.class);
 		ServerModManager.registerServerMod(purpur);
 	}
 
