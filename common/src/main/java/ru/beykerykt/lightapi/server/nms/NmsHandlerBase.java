@@ -41,7 +41,7 @@ public abstract class NmsHandlerBase implements INMSHandler {
 	public boolean isValidSectionY(int sectionY) {
 		return sectionY >= 0 && sectionY < 16;
 	}
-	
+
 	@Override
 	public boolean isValidSectionY(World world, int sectionY) {
 		return sectionY >= 0 && sectionY < 16;
@@ -51,10 +51,10 @@ public abstract class NmsHandlerBase implements INMSHandler {
 	public int asSectionMask(int sectionY) {
 		return 1 << sectionY;
 	}
-	
+
 	@Override
 	public BitSet asSectionMask(World world, int sectionY) {
-		return BitSet.valueOf(new long[] {asSectionMask(sectionY)});
+		return BitSet.valueOf(new long[]{asSectionMask(sectionY)});
 	}
 
 	protected int getViewDistance(Player player) {
@@ -158,7 +158,7 @@ public abstract class NmsHandlerBase implements INMSHandler {
 			sendChunkSectionsUpdate(world, chunkX, chunkZ, sectionsMaskSky, sectionsMaskBlock, player);
 		}
 	}
-	
+
 	@Override
 	public void sendChunkSectionsUpdate(
 			World world, int chunkX, int chunkZ,

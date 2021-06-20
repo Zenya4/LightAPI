@@ -112,7 +112,7 @@ public class Metrics_mcstats {
 
 	/**
 	 * The plugin name.
- 	 */
+	 */
 	private final String pluginName;
 
 	/**

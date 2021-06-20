@@ -98,7 +98,7 @@ public interface INMSHandler {
 			int sectionsMaskBlock,
 			Player player
 	);
-	
+
 	void sendChunkSectionsUpdate(
 			World world,
 			int chunkX,
@@ -120,12 +120,12 @@ public interface INMSHandler {
 	// Utils...
 	@Deprecated
 	boolean isValidSectionY(int sectionY);
-	
+
 	boolean isValidSectionY(World world, int sectionY);
 
 	@Deprecated
 	int asSectionMask(int sectionY);
-	
+
 	BitSet asSectionMask(World world, int sectionY);
 
 	Collection<? extends Player> filterVisiblePlayers(

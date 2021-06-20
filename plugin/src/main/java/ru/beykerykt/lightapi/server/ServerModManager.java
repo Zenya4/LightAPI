@@ -37,7 +37,7 @@ public class ServerModManager {
 
 	public static Class<? extends INMSHandler> findImplementaion(String modName) {
 		ServerModInfo impl = supportImpl.get(modName);
-		return impl != null?impl.getVersions().get(getServerVersion()):null;
+		return impl != null ? impl.getVersions().get(getServerVersion()) : null;
 	}
 
 	public static void initImplementaion(Class<? extends INMSHandler> clazz) throws Exception {

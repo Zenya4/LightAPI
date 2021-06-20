@@ -166,7 +166,7 @@ public class CraftBukkit_v1_17_R1 extends NmsHandlerBase {
 			}
 		});
 	}
-	
+
 	@Override
 	public void sendChunkSectionsUpdate(World world, int chunkX, int chunkZ, int sectionsMaskSky, int sectionsMaskBlock,
 			Player player) {
@@ -188,7 +188,7 @@ public class CraftBukkit_v1_17_R1 extends NmsHandlerBase {
 	public boolean isValidSectionY(int sectionY) {
 		throw new UnsupportedOperationException("This version of Minecraft allows different world heights for different worlds.");
 	}
-	
+
 	@Override
 	public boolean isValidSectionY(World world, int sectionY) {
 		return sectionY >= (world.getMinHeight() >> 4) - 1 && sectionY <= (world.getMaxHeight() >> 4);
@@ -198,7 +198,7 @@ public class CraftBukkit_v1_17_R1 extends NmsHandlerBase {
 	public int asSectionMask(int sectionY) {
 		throw new UnsupportedOperationException("This version of Minecraft allows different world heights for different worlds.");
 	}
-	
+
 	@Override
 	public BitSet asSectionMask(World world, int sectionY) {
 		BitSet bitset = new BitSet();
@@ -352,5 +352,5 @@ public class CraftBukkit_v1_17_R1 extends NmsHandlerBase {
 			return lightEngine.a(EnumSkyBlock.b) instanceof LightEngineBlock;
 		}
 	}
-	
+
 }
