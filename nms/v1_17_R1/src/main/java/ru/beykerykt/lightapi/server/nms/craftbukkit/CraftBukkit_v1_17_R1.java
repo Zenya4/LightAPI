@@ -69,7 +69,7 @@ public class CraftBukkit_v1_17_R1 extends NmsHandlerBase {
 
 	public CraftBukkit_v1_17_R1() {
 		try {
-			threadedMailbox_DoLoopStep = ThreadedMailbox.class.getDeclaredMethod("f");
+			threadedMailbox_DoLoopStep = ThreadedMailbox.class.getDeclaredMethod("g");
 			threadedMailbox_DoLoopStep.setAccessible(true);
 			threadedMailbox_State = ThreadedMailbox.class.getDeclaredField("d");
 			threadedMailbox_State.setAccessible(true);
@@ -191,7 +191,7 @@ public class CraftBukkit_v1_17_R1 extends NmsHandlerBase {
 	
 	@Override
 	public boolean isValidSectionY(World world, int sectionY) {
-		return sectionY >= (world.getMinHeight() >> 4) && sectionY < (world.getMaxHeight() >> 4);
+		return sectionY >= (world.getMinHeight() >> 4) - 1 && sectionY <= (world.getMaxHeight() >> 4);
 	}
 
 	@Override
@@ -319,7 +319,7 @@ public class CraftBukkit_v1_17_R1 extends NmsHandlerBase {
 								list.add(cCoord);
 							}
 						}
-						for (int sectionY = blockY >> 4; sectionY >= -1; sectionY--) {
+						for (int sectionY = blockY >> 4; isValidSectionY(world, sectionY); sectionY--) {
 							if (isValidSectionY(world, sectionY)) {
 								int chunkX = blockX >> 4;
 								int chunkZ = blockZ >> 4;

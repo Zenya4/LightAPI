@@ -168,13 +168,17 @@ public abstract class NmsHandlerBase implements INMSHandler {
 			sendChunkSectionsUpdate(world, chunkX, chunkZ, sectionsMaskSky, sectionsMaskBlock, player);
 		}
 	}
-	
+
+	private int toInt(BitSet mask) {
+		return mask.isEmpty() ? 0 : (int) mask.toLongArray()[0];
+	}
+
 	@Override
 	public void sendChunkSectionsUpdate(
 			World world, int chunkX, int chunkZ,
 			BitSet sectionsMaskSky, BitSet sectionsMaskBlock, Player player
 	) {
-		sendChunkSectionsUpdate(world, chunkX, chunkZ, (int) sectionsMaskSky.toLongArray()[0], (int) sectionsMaskBlock.toLongArray()[0], player);
+		sendChunkSectionsUpdate(world, chunkX, chunkZ, toInt(sectionsMaskSky), toInt(sectionsMaskBlock), player);
 	}
 
 	@Deprecated
