@@ -72,6 +72,7 @@ public class LightAPI extends JavaPlugin implements Listener {
 
 	private static LightAPI plugin;
 	private static RequestSteamMachine machine;
+	private static final String modCraftBukkit = "CraftBukkit";
 	private int update_delay_ticks;
 	private int max_iterations_per_tick;
 
@@ -96,7 +97,7 @@ public class LightAPI extends JavaPlugin implements Listener {
 		this.plugin = this;
 		this.machine = new RequestSteamMachine();
 
-		ServerModInfo craftbukkit = new ServerModInfo("CraftBukkit");
+		ServerModInfo craftbukkit = new ServerModInfo(modCraftBukkit);
 		craftbukkit.getVersions().put("v1_8_R3", CraftBukkit_v1_8_R3.class);
 		craftbukkit.getVersions().put("v1_9_R1", CraftBukkit_v1_9_R1.class);
 		craftbukkit.getVersions().put("v1_9_R2", CraftBukkit_v1_9_R2.class);
@@ -112,75 +113,6 @@ public class LightAPI extends JavaPlugin implements Listener {
 		craftbukkit.getVersions().put("v1_16_R3", CraftBukkit_v1_16_R3.class);
 		craftbukkit.getVersions().put("v1_17_R1", CraftBukkit_v1_17_R1.class);
 		ServerModManager.registerServerMod(craftbukkit);
-
-		ServerModInfo spigot = new ServerModInfo("Spigot");
-		spigot.getVersions().put("v1_8_R3", CraftBukkit_v1_8_R3.class);
-		spigot.getVersions().put("v1_9_R1", CraftBukkit_v1_9_R1.class);
-		spigot.getVersions().put("v1_9_R2", CraftBukkit_v1_9_R2.class);
-		spigot.getVersions().put("v1_10_R1", CraftBukkit_v1_10_R1.class);
-		spigot.getVersions().put("v1_11_R1", CraftBukkit_v1_11_R1.class);
-		spigot.getVersions().put("v1_12_R1", CraftBukkit_v1_12_R1.class);
-		spigot.getVersions().put("v1_13_R1", CraftBukkit_v1_13_R1.class);
-		spigot.getVersions().put("v1_13_R2", CraftBukkit_v1_13_R2.class);
-		spigot.getVersions().put("v1_14_R1", CraftBukkit_v1_14_R1.class);
-		spigot.getVersions().put("v1_15_R1", CraftBukkit_v1_15_R1.class);
-		spigot.getVersions().put("v1_16_R1", CraftBukkit_v1_16_R1.class);
-		spigot.getVersions().put("v1_16_R2", CraftBukkit_v1_16_R2.class);
-		spigot.getVersions().put("v1_16_R3", CraftBukkit_v1_16_R3.class);
-		spigot.getVersions().put("v1_17_R1", CraftBukkit_v1_17_R1.class);
-		ServerModManager.registerServerMod(spigot);
-
-		ServerModInfo paperspigot = new ServerModInfo("PaperSpigot");
-		paperspigot.getVersions().put("v1_8_R3", CraftBukkit_v1_8_R3.class);
-		ServerModManager.registerServerMod(paperspigot);
-
-		ServerModInfo paper = new ServerModInfo("Paper");
-		paper.getVersions().put("v1_9_R1", CraftBukkit_v1_9_R1.class);
-		paper.getVersions().put("v1_9_R2", CraftBukkit_v1_9_R2.class);
-		paper.getVersions().put("v1_10_R1", CraftBukkit_v1_10_R1.class);
-		paper.getVersions().put("v1_11_R1", CraftBukkit_v1_11_R1.class);
-		paper.getVersions().put("v1_12_R1", CraftBukkit_v1_12_R1.class);
-		paper.getVersions().put("v1_13_R1", CraftBukkit_v1_13_R1.class);
-		paper.getVersions().put("v1_13_R2", CraftBukkit_v1_13_R2.class);
-		paper.getVersions().put("v1_14_R1", CraftBukkit_v1_14_R1.class);
-		paper.getVersions().put("v1_15_R1", CraftBukkit_v1_15_R1.class);
-		paper.getVersions().put("v1_16_R1", CraftBukkit_v1_16_R1.class);
-		paper.getVersions().put("v1_16_R2", CraftBukkit_v1_16_R2.class);
-		paper.getVersions().put("v1_16_R3", CraftBukkit_v1_16_R3.class);
-		ServerModManager.registerServerMod(paper);
-
-		ServerModInfo tacospigot = new ServerModInfo("TacoSpigot");
-		// tacospigot.getVersions().put("v1_8_R3", PaperSpigot_v1_8_R3.class); - call errors with anti-xray - obfuscate
-		tacospigot.getVersions().put("v1_9_R1", CraftBukkit_v1_9_R1.class);
-		tacospigot.getVersions().put("v1_9_R2", CraftBukkit_v1_9_R2.class);
-		tacospigot.getVersions().put("v1_10_R1", CraftBukkit_v1_10_R1.class);
-		tacospigot.getVersions().put("v1_11_R1", CraftBukkit_v1_11_R1.class);
-		tacospigot.getVersions().put("v1_12_R1", CraftBukkit_v1_12_R1.class);
-		tacospigot.getVersions().put("v1_13_R1", CraftBukkit_v1_13_R1.class);
-		tacospigot.getVersions().put("v1_13_R2", CraftBukkit_v1_13_R2.class);
-		tacospigot.getVersions().put("v1_14_R1", CraftBukkit_v1_14_R1.class);
-		tacospigot.getVersions().put("v1_15_R1", CraftBukkit_v1_15_R1.class);
-		ServerModManager.registerServerMod(tacospigot);
-
-		ServerModInfo akarin = new ServerModInfo("Akarin");
-		akarin.getVersions().put("v1_9_R1", CraftBukkit_v1_9_R1.class);
-		akarin.getVersions().put("v1_9_R2", CraftBukkit_v1_9_R2.class);
-		akarin.getVersions().put("v1_10_R1", CraftBukkit_v1_10_R1.class);
-		akarin.getVersions().put("v1_11_R1", CraftBukkit_v1_11_R1.class);
-		akarin.getVersions().put("v1_12_R1", CraftBukkit_v1_12_R1.class);
-		akarin.getVersions().put("v1_13_R1", CraftBukkit_v1_13_R1.class);
-		akarin.getVersions().put("v1_13_R2", CraftBukkit_v1_13_R2.class);
-		akarin.getVersions().put("v1_14_R1", CraftBukkit_v1_14_R1.class);
-		akarin.getVersions().put("v1_15_R1", CraftBukkit_v1_15_R1.class);
-		ServerModManager.registerServerMod(akarin);
-
-		ServerModInfo purpur = new ServerModInfo("Purpur");
-		purpur.getVersions().put("v1_14_R1", CraftBukkit_v1_14_R1.class);
-		purpur.getVersions().put("v1_15_R1", CraftBukkit_v1_15_R1.class);
-		purpur.getVersions().put("v1_16_R1", CraftBukkit_v1_16_R1.class);
-		purpur.getVersions().put("v1_16_R2", CraftBukkit_v1_16_R2.class);
-		purpur.getVersions().put("v1_16_R3", CraftBukkit_v1_16_R3.class);
-		ServerModManager.registerServerMod(purpur);
 	}
 
 	@Override
@@ -231,15 +163,13 @@ public class LightAPI extends JavaPlugin implements Listener {
 		// init nms
 		String serverName = ServerModManager.getServerName();
 		String bukkitName = ServerModManager.getBukkitName();
-		String craftBukkit = "CraftBukkit";
 		String modName;
 		Class<? extends INMSHandler> clazz = ServerModManager.findImplementaion(modName = serverName);
 		if (clazz == null && !serverName.equals(bukkitName)) {
 			clazz = ServerModManager.findImplementaion(modName = bukkitName);
 		}
-		if (clazz == null && !Arrays.asList(serverName, bukkitName).contains(craftBukkit)) {
-			logInfo("Could not find §f%s§r implementation. Trying §f%s§r instead", serverName, craftBukkit);
-			clazz = ServerModManager.findImplementaion(modName = craftBukkit);
+		if (clazz == null && !Arrays.asList(serverName, bukkitName).contains(modCraftBukkit)) {
+			clazz = ServerModManager.findImplementaion(modName = modCraftBukkit);
 		}
 		if (clazz == null) {
 			logError("No implementations was found for §f%s§r server §f%s§r.",
