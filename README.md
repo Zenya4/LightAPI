@@ -10,8 +10,8 @@ Bukkit plugin for Minecraft server 1.8, 1.9, 1.10, 1.11, 1.12, 1.13, 1.14, 1.15,
 > The MIT License (MIT)
 >
 > Copyright (c) 2016-2017 The ImplexDevOne Project  
-> Copyright (c) 2019 Vladimir Mikhailov <beykerykt@gmail.com>  
-> Copyright (c) 2021 LOOHP <jamesloohp@gmail.com>
+> Copyright (c) 2019 Vladimir Mikhailov &lt;beykerykt@gmail.com&gt;  
+> Copyright (c) 2021 LOOHP &lt;jamesloohp@gmail.com&gt;  
 > Copyright (c) 2021 Qveshn
 >
 >Permission is hereby granted, free of charge, to any person obtaining a copy
