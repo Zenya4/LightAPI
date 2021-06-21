@@ -44,7 +44,7 @@ public abstract class NmsHandlerBase implements INMSHandler {
 
 	@Override
 	public boolean isValidSectionY(World world, int sectionY) {
-		return sectionY >= 0 && sectionY < 16;
+		return isValidSectionY(sectionY);
 	}
 
 	@Override
