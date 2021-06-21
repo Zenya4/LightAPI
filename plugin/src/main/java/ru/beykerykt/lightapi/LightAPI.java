@@ -32,7 +32,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.Configuration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -58,9 +58,11 @@ import ru.beykerykt.lightapi.utils.Metrics_mcstats;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -69,7 +71,6 @@ public class LightAPI extends JavaPlugin implements Listener {
 
 	private static LightAPI plugin;
 	private static RequestSteamMachine machine;
-	private int configVer = 3;
 	private int update_delay_ticks;
 	private int max_iterations_per_tick;
 
@@ -184,35 +185,47 @@ public class LightAPI extends JavaPlugin implements Listener {
 	@Override
 	public void onEnable() {
 		// Config
+		saveDefaultConfig();
+		Configuration config = getConfig();
 		try {
-			FileConfiguration fc = getConfig();
-			File file = new File(getDataFolder(), "config.yml");
-			if (file.exists()) {
-				if (fc.getInt("version") < configVer) {
-					if (!file.delete()) { // got a better idea?
-						throw new IOException("Can not delete " + file.getPath());
-					}
-					generateConfig(file);
-				}
-			} else {
-				generateConfig(file);
+			Configuration defaults = config.getDefaults();
+			if (defaults == null) {
+				throw new NullPointerException("Missing default config");
 			}
-		} catch (Exception e) {
+			int version = config.getInt("version", -1);
+			int newVersion = defaults.getInt("version");
+			if (version != newVersion) {
+				this.coloredLog = config.getBoolean("colored-log");
+				logError("Incorrect config version (§f%d§r instead §f%d§r). Will be updated.", version, newVersion);
+				File file = new File(getDataFolder(), "config.yml");
+				File bkp = new File(getDataFolder(), String.format("config.yml.%s.backup",
+						new SimpleDateFormat("yyyy-MM-dd.HH-mm-ss.SSS").format(new Date())));
+				logInfo("Saving §fconfig.yml§r to §f%s", bkp.getName());
+				if (!file.renameTo(bkp)) {
+					throw new IOException(String.format("Can not rename file '%s' to '%s'", file, bkp));
+				}
+				saveDefaultConfig();
+				reloadConfig();
+				config = getConfig();
+			}
+		} catch (Throwable e) {
 			e.printStackTrace();
+			getPluginLoader().disablePlugin(this);
+			return;
 		}
 
 		// Init config
-		this.update_delay_ticks = getConfig().getInt("update-delay-ticks");
-		this.max_iterations_per_tick = getConfig().getInt("max-iterations-per-tick");
-		this.enableUpdater = getConfig().getBoolean("updater.enable");
-		this.repo = getConfig().getString("updater.repo");
-		this.delayUpdate = getConfig().getInt("updater.update-delay-ticks");
-		this.viewChangelog = getConfig().getBoolean("updater.view-changelog");
-		this.coloredLog = getConfig().getBoolean("colored-log");
-		this.messagePrefix = getConfig().getString("message-prefix");
+		this.update_delay_ticks = config.getInt("update-delay-ticks");
+		this.max_iterations_per_tick = config.getInt("max-iterations-per-tick");
+		this.enableUpdater = config.getBoolean("updater.enable");
+		this.repo = config.getString("updater.repo", repo);
+		this.delayUpdate = config.getInt("updater.update-delay-ticks");
+		this.viewChangelog = config.getBoolean("updater.view-changelog");
+		this.coloredLog = config.getBoolean("colored-log");
+		this.messagePrefix = config.getString("message-prefix");
 		if (messagePrefix == null) messagePrefix = "";
 
-		Debug.setEnable(getConfig().getBoolean("debug"));
+		Debug.setEnable(config.getBoolean("debug"));
 
 		// init nms
 		String serverName = ServerModManager.getServerName();
@@ -578,25 +591,6 @@ public class LightAPI extends JavaPlugin implements Listener {
 			}
 		}
 		return block;
-	}
-
-	private void generateConfig(File file) {
-		FileConfiguration fc = getConfig();
-		if (!file.exists()) {
-			fc.options().header("LightAPI-fork v" + getDescription().getVersion() + " Configuration"
-					+ "\nby " + join(", ", getDescription().getAuthors()));
-			fc.set("version", configVer);
-			fc.set("update-delay-ticks", 2);
-			fc.set("max-iterations-per-tick", 400);
-			fc.set("updater.enable", true);
-			fc.set("updater.repo", "Qveshn/LightAPI");
-			fc.set("updater.update-delay-ticks", 40);
-			fc.set("updater.view-changelog", false);
-			fc.set("debug", false);
-			fc.set("colored-log", true);
-			fc.set("message-prefix", "");
-			saveConfig();
-		}
 	}
 
 	@SuppressWarnings("WeakerAccess")

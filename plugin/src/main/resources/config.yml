@@ -1,0 +1,12 @@
+# LightAPI configuration
+version: 3
+update-delay-ticks: 2
+max-iterations-per-tick: 400
+updater:
+  enable: true
+  repo: Qveshn/LightAPI
+  update-delay-ticks: 40
+  view-changelog: false
+debug: false
+colored-log: true
+message-prefix: ''
