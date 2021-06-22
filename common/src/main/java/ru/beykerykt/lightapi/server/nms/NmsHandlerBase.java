@@ -82,9 +82,11 @@ public abstract class NmsHandlerBase implements INMSHandler {
 	private boolean isVisibleToPlayer(World world, int chunkX, int chunkZ, Player player) {
 		Location location = player.getLocation();
 		if (!world.equals(location.getWorld())) return false;
-		double dx = chunkX - (location.getBlockX() >> 4);
-		double dz = chunkZ - (location.getBlockZ() >> 4);
-		return (int) Math.sqrt(dx * dx + dz * dz) < getViewDistance(player);
+		int viewDistance = getViewDistance(player);
+		int dx = chunkX - (location.getBlockX() >> 4);
+		if (dx > viewDistance || -dx > viewDistance) return false;
+		int dz = chunkZ - (location.getBlockZ() >> 4);
+		return dz <= viewDistance && -dz <= viewDistance;
 	}
 
 	@Override
