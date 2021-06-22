@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2016-2017 The ImplexDevOne Project
  * Copyright (c) 2019 Vladimir Mikhailov <beykerykt@gmail.com>
- * Copyright (c) 2020 Qveshn
+ * Copyright (c) 2021 Qveshn
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
