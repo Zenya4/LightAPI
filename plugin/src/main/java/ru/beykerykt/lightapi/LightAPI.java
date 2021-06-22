@@ -55,7 +55,6 @@ import ru.beykerykt.lightapi.updater.Version;
 import ru.beykerykt.lightapi.utils.BungeeChatHelperClass;
 import ru.beykerykt.lightapi.utils.Debug;
 import ru.beykerykt.lightapi.utils.Metrics_bStats;
-import ru.beykerykt.lightapi.utils.Metrics_mcstats;
 
 import java.io.File;
 import java.io.IOException;
@@ -203,12 +202,6 @@ public class LightAPI extends JavaPlugin implements Listener {
 		}
 
 		// init metrics
-		try {
-			Metrics_mcstats metrics = new Metrics_mcstats(this, getName() + "-fork");
-			metrics.start();
-		} catch (IOException e) {
-			// Failed to submit the stats :-(
-		}
 		new Metrics_bStats(this, getName() + "-fork");
 	}
 
