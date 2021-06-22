@@ -119,9 +119,6 @@ public interface INMSHandler {
 	);
 
 	// Utils...
-	@Deprecated
-	boolean isValidSectionY(int sectionY);
-
 	boolean isValidSectionY(World world, int sectionY);
 
 	@Deprecated
@@ -134,4 +131,8 @@ public interface INMSHandler {
 	);
 
 	boolean isSupported(World world, LightType lightType);
+
+	int getMinLightHeight(World world);
+
+	int getMaxLightHeight(World world);
 }

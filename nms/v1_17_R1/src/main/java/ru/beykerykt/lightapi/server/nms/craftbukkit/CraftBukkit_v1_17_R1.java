@@ -186,16 +186,6 @@ public class CraftBukkit_v1_17_R1 extends NmsHandlerBase {
 	}
 
 	@Override
-	public boolean isValidSectionY(int sectionY) {
-		throw new UnsupportedOperationException("This version of Minecraft allows different world heights for different worlds.");
-	}
-
-	@Override
-	public boolean isValidSectionY(World world, int sectionY) {
-		return sectionY >= (world.getMinHeight() >> 4) - 1 && sectionY <= (world.getMaxHeight() >> 4);
-	}
-
-	@Override
 	public int asSectionMask(int sectionY) {
 		throw new UnsupportedOperationException("This version of Minecraft allows different world heights for different worlds.");
 	}
@@ -354,4 +344,13 @@ public class CraftBukkit_v1_17_R1 extends NmsHandlerBase {
 		}
 	}
 
+	@Override
+	public int getMinLightHeight(World world) {
+		return world.getMinHeight() - 16;
+	}
+
+	@Override
+	public int getMaxLightHeight(World world) {
+		return world.getMaxHeight() + 16;
+	}
 }

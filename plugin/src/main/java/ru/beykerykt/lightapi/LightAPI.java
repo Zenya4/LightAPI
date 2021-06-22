@@ -277,6 +277,14 @@ public class LightAPI extends JavaPlugin implements Listener {
 		return ServerModManager.getNMSHandler().isSupported(world, lightType);
 	}
 
+	public static int getMinLightHeight(World world) {
+		return ServerModManager.getNMSHandler().getMinLightHeight(world);
+	}
+
+	public static int getMaxLightHeight(World world) {
+		return ServerModManager.getNMSHandler().getMaxLightHeight(world);
+	}
+
 	@Deprecated
 	@SuppressWarnings("unused")
 	public static boolean createLight(Location location, int lightlevel, boolean async) {

@@ -170,11 +170,6 @@ public class CraftBukkit_v1_14_R1 extends NmsHandlerBase {
 	}
 
 	@Override
-	public boolean isValidSectionY(int sectionY) {
-		return sectionY >= -1 && sectionY <= 16;
-	}
-
-	@Override
 	public int asSectionMask(int sectionY) {
 		return 1 << sectionY + 1;
 	}
@@ -280,7 +275,7 @@ public class CraftBukkit_v1_14_R1 extends NmsHandlerBase {
 					if (lightLevelZ > 0) {
 						if (lightLevelZ > getDeltaLight(blockY & 15, 1)) {
 							int sectionY = (blockY >> 4) + 1;
-							if (isValidSectionY(sectionY)) {
+							if (isValidSectionY(world, sectionY)) {
 								int chunkX = blockX >> 4;
 								int chunkZ = blockZ >> 4;
 								ChunkInfo cCoord = new ChunkInfo(
@@ -293,7 +288,7 @@ public class CraftBukkit_v1_14_R1 extends NmsHandlerBase {
 							}
 						}
 						for (int sectionY = blockY >> 4; sectionY >= -1; sectionY--) {
-							if (isValidSectionY(sectionY)) {
+							if (isValidSectionY(world, sectionY)) {
 								int chunkX = blockX >> 4;
 								int chunkZ = blockZ >> 4;
 								ChunkInfo cCoord = new ChunkInfo(
@@ -324,5 +319,15 @@ public class CraftBukkit_v1_14_R1 extends NmsHandlerBase {
 		} else {
 			return lightEngine.a(EnumSkyBlock.BLOCK) instanceof LightEngineBlock;
 		}
+	}
+
+	@Override
+	public int getMinLightHeight(World world) {
+		return -16;
+	}
+
+	@Override
+	public int getMaxLightHeight(World world) {
+		return world.getMaxHeight() + 16;
 	}
 }

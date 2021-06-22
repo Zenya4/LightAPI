@@ -39,13 +39,30 @@ import java.util.List;
 public abstract class NmsHandlerBase implements INMSHandler {
 
 	@Override
-	public boolean isValidSectionY(int sectionY) {
-		return sectionY >= 0 && sectionY < 16;
+	public int getMinLightHeight(World world) {
+		// Always 0 for 1.8 - 1.13.2 (v1_8_R1 - v1_13_R2) (same as world min height)
+		// Should be overridden for other versions
+		return 0;
 	}
 
 	@Override
-	public boolean isValidSectionY(World world, int sectionY) {
-		return isValidSectionY(sectionY);
+	public int getMaxLightHeight(World world) {
+		// Always 256 for 1.8 - 1.13.2 (v1_8_R1 - v1_13_R2) (same as world max height)
+		// Should be overridden for other versions
+		return world.getMaxHeight();
+	}
+
+	private int getMinLightSection(World world) {
+		return getMinLightHeight(world) >> 4;
+	}
+
+	private int getMaxLightSection(World world) {
+		return (getMaxLightHeight(world) + 15) >> 4;
+	}
+
+	@Override
+	public final boolean isValidSectionY(World world, int sectionY) {
+		return sectionY >= getMinLightSection(world) && sectionY < getMaxLightSection(world);
 	}
 
 	@Override
