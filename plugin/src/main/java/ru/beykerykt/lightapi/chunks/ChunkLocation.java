@@ -80,7 +80,6 @@ public class ChunkLocation {
 		return x == other.x && z == other.z;
 	}
 
-
 	@Override
 	public String toString() {
 		return "ChunkCoords [world=" + (world == null ? null : world.getName()) + ", x=" + x + ", z=" + z + "]";

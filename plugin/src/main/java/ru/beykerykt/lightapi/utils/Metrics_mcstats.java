@@ -464,7 +464,6 @@ public class Metrics_mcstats {
 			connection = url.openConnection();
 		}
 
-
 		byte[] uncompressed = json.toString().getBytes();
 		byte[] compressed = gzip(json.toString());
 

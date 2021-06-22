@@ -58,7 +58,6 @@ public class UpdaterRunnable implements Runnable {
 			method.invoke(updater);
 
 			method.setAccessible(false);
-
 		} catch (Throwable e) {
 			e.printStackTrace();
 		}

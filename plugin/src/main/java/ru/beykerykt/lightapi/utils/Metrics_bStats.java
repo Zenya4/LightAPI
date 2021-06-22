@@ -608,7 +608,6 @@ public class Metrics_bStats {
 			data.addProperty("value", value);
 			return data;
 		}
-
 	}
 
 	/**
@@ -653,7 +652,6 @@ public class Metrics_bStats {
 			data.add("values", values);
 			return data;
 		}
-
 	}
 
 	/**
@@ -691,7 +689,6 @@ public class Metrics_bStats {
 			data.add("values", values);
 			return data;
 		}
-
 	}
 
 	/**
@@ -741,5 +738,4 @@ public class Metrics_bStats {
 			return data;
 		}
 	}
-
 }

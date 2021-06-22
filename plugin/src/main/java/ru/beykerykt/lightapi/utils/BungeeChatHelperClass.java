@@ -101,8 +101,6 @@ public class BungeeChatHelperClass {
 		text.addExtra(checkUpdate);
 		text.addExtra(new TextComponent("§e§l>"));
 		sendMessage(player, text, plugin);
-
-
 	}
 
 	private static void sendMessage(Player player, BaseComponent component, LightAPI plugin) {
