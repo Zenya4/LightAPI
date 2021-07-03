@@ -323,7 +323,7 @@ public class CraftBukkit_v1_16_R3 extends NmsHandlerBase {
 
 	@Override
 	public int getMinLightHeight(World world) {
-		return world.getMinHeight() - 16;
+		return -16;
 	}
 
 	@Override
